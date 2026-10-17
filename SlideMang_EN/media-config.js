@@ -1,4 +1,4 @@
-var MEDIA_BASE = "./images/";
+var MEDIA_BASE = "./media/";
 var MEDIA_CHANNEL = "obs_control";
 var MEDIA_START_VISIBLE = true;
 

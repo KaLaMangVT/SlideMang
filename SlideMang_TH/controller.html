@@ -5,7 +5,7 @@
     <title>Media & Title Controller</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; margin: 0; }
-h2 .opt-btn {
+        h2 .opt-btn {
             font-size: 11px;
             padding: 4px 8px;
             font-weight: normal;
@@ -20,7 +20,7 @@ h2 .opt-btn {
         h2 { margin: 0 0 12px; color: #007bff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
         h2 small { color: #aaa; font-weight: normal; font-size: 13px; margin-left: 8px; }
         .h2-left { display: flex; align-items: center; gap: 10px; }
-        .h2-right { display: flex; align-items: center; gap: 8px; }
+        .h2-right { display: flex; align-items: center; gap: 8px; z-index: 2; }
 
         button { cursor: pointer; border: none; border-radius: 4px; background: #444; color: white; transition: 0.1s; font-family: inherit; }
         button:hover { background: #555; }
@@ -104,6 +104,12 @@ h2 .opt-btn {
         #md-play.playing { background: #e67e22; }
         #md-loop.on { background: #0277bd; }
         #md-loop.off { background: #8b0000; }
+
+        /* Style สำหรับปุ่ม Stop On Hide Switch บน Header */
+        #md-autostop { padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        #md-autostop.on { background: #c62828; color: #fff; border: 1px solid #ef5350; }
+        #md-autostop.off { background: #222; color: #aaa; border: 1px solid #444; }
+
         .vol { display: flex; align-items: center; gap: 8px; margin-left: auto; background: #1a1a1a; padding: 6px 10px; border-radius: 5px; }
         .vol input { width: 120px; }
         .vol span { font-size: 12px; color: #aaa; min-width: 36px; text-align: right; }
@@ -156,16 +162,14 @@ h2 .opt-btn {
                 <input type="file" id="file-selector" accept=".json" style="display: none;" onchange="io_handleFileSelect(event)">
                 <button type="button" class="icon-btn" onclick="document.getElementById('file-selector').click()" title="โหลด Config จาก save.json">📁</button>
                 
-                <!-- ปุ่ม Save สำหรับเขียนลง save.json โดยตรงผ่าน Chrome -->
                 <button type="button" class="btn-collapse" onclick="io_saveToFile()" title="บันทึกทับไฟล์ save.json โดยตรง" style="background: #1b7a34; color: #fff;">💾 Save to save.json</button>
-
                 <button type="button" class="btn-collapse" id="btn-toggle-settings" onclick="toggleSettingsPanel()">▲ ซ่อน Preset & ตำแหน่ง</button>
             </div>
         </h2>
 
         <div id="credit-container" class="credit-box">
             <div>Creator: <span>KaLaMangVT</span></div>
-            <div>Ver: <span>1.0</span></div>
+            <div>Ver: <span>1.1</span></div>
             <div>Github: <span>https://github.com/KaLaMangVT/SlideMang</span></div>
         </div>
         
@@ -295,7 +299,16 @@ h2 .opt-btn {
 
         <!-- Video Controller -->
         <div class="section" style="margin-bottom: 0;">
-            <h2>🎬 Video Controller <small id="md-vid-title"></small></h2>
+            <h2>
+                <div class="h2-left">
+                    <span>🎬 Video Controller</span>
+                    <small id="md-vid-title"></small>
+                </div>
+                <div class="h2-right" style="gap: 8px;">
+                    <span style="font-size: 11px; color: #aaa;">Stop on Hide:</span>
+                    <button type="button" id="md-autostop" class="off" onclick="md_toggleAutoStopOnHide()" title="เมื่อซ่อนจอ (Hide) ให้หยุดเล่นวิดีโอทันที">OFF</button>
+                </div>
+            </h2>
             <div class="vid-only" id="md-vid-ctrl">
                 <div class="time-row">
                     <span id="md-time">00:00</span>
@@ -357,7 +370,7 @@ h2 .opt-btn {
     var md_bc = new BroadcastChannel(MEDIA_CHANNEL);
     var VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
 
-    var md_state = { index: 0, visible: MEDIA_START_VISIBLE, volume: 1, muted: false };
+    var md_state = { index: 0, visible: MEDIA_START_VISIBLE, volume: 1, muted: false, autoStopOnHide: false };
     var md_override = {};
     var md_status = null;
     var md_statusAt = 0;
@@ -387,11 +400,10 @@ h2 .opt-btn {
         creditOpen: false
     };
 
-var slideDirection = 'slide-up'; // ค่าเริ่มต้น
+    var slideDirection = 'slide-up';
 
     function setSlideDir(dir) {
         slideDirection = dir;
-        // เพิ่ม 'cut' เข้าไปในลูปตรวจสอบไฮไลต์ปุ่ม
         ['cut', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'random'].forEach(function(d) {
             var btnId = d === 'random' ? 'btn-dir-random' : (d === 'cut' ? 'btn-dir-cut' : (d === 'fade' ? 'btn-dir-fade' : ('btn-dir-' + d.replace('slide-', ''))));
             var btn = md_$(btnId);
@@ -405,26 +417,25 @@ var slideDirection = 'slide-up'; // ค่าเริ่มต้น
         md_save();
     }
 
-var bgMode = 'transparent'; // ค่าเริ่มต้น
+    var bgMode = 'transparent';
 
-function setBgMode(mode) {
-    bgMode = mode;
-    
-    ['bg1', 'bg2', 'bg3', 'transparent'].forEach(function(m) {
-        var btn = md_$('btn-bg-' + m);
-        if (btn) {
-            if (m === mode) {
-                btn.classList.add('selected'); // ไฮไลต์ปุ่มที่เลือก
-            } else {
-                btn.classList.remove('selected'); // ถอดไฮไลต์ปุ่มอื่น
+    function setBgMode(mode) {
+        bgMode = mode;
+        
+        ['bg1', 'bg2', 'bg3', 'transparent'].forEach(function(m) {
+            var btn = md_$('btn-bg-' + m);
+            if (btn) {
+                if (m === mode) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
             }
-        }
-    });
+        });
 
-    // ส่งสัญญาณไปยังหน้า Display และบันทึกค่า
-    md_bc.postMessage({ type: 'BG_CHANGE', mode: mode });
-    md_save();
-}
+        md_bc.postMessage({ type: 'BG_CHANGE', mode: mode });
+        md_save();
+    }
 
     function md_$(id) { return document.getElementById(id); }
     function md_kind(item) { return item.type ? item.type : (VIDEO_EXT.test(item.file) ? 'video' : 'image'); }
@@ -451,7 +462,9 @@ function setBgMode(mode) {
         try {
             var fullData = {
                 index: md_state.index, visible: md_state.visible,
-                volume: md_state.volume, muted: md_state.muted, override: md_override,
+                volume: md_state.volume, muted: md_state.muted, 
+                autoStopOnHide: md_state.autoStopOnHide,
+                override: md_override,
                 tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
                 autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
             };
@@ -459,18 +472,18 @@ function setBgMode(mode) {
         } catch (e) {}
     }
 
-    // ฟังก์ชัน Save ลงไฟล์ save.json โดยตรง (รองรับผ่าน Google Chrome ที่รองรับ File System API)
     async function io_saveToFile() {
         var fullData = {
             index: md_state.index, visible: md_state.visible,
-            volume: md_state.volume, muted: md_state.muted, override: md_override,
+            volume: md_state.volume, muted: md_state.muted, 
+            autoStopOnHide: md_state.autoStopOnHide,
+            override: md_override,
             tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
             autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
         };
         var text = JSON.stringify(fullData, null, 2);
 
         try {
-            // ใช้ File System Access API หากเบราว์เซอร์รองรับ (เช่น Chrome เมื่อเปิดผ่านเครื่อง)
             if (window.showSaveFilePicker) {
                 const opts = {
                     suggestedName: 'save.json',
@@ -491,11 +504,10 @@ function setBgMode(mode) {
             if (err.name !== 'AbortError') {
                 console.log('File System API fallback to download', err);
             } else {
-                return; // ผู้ใช้กดยกเลิก
+                return;
             }
         }
 
-        // กรณีเปิดใน OBS หรือเบราว์เซอร์ที่ไม่รองรับ API จะใช้วิธีดาวน์โหลดไฟล์สำรองแทน
         var blob = new Blob([text], { type: 'application/json;charset=utf-8' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
@@ -569,7 +581,9 @@ function setBgMode(mode) {
     function io_copyConfig() {
         var fullData = {
             index: md_state.index, visible: md_state.visible,
-            volume: md_state.volume, muted: md_state.muted, override: md_override,
+            volume: md_state.volume, muted: md_state.muted, 
+            autoStopOnHide: md_state.autoStopOnHide,
+            override: md_override,
             tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
             autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
         };
@@ -597,6 +611,7 @@ function setBgMode(mode) {
                 if (typeof saved.visible === 'boolean') md_state.visible = saved.visible;
                 if (typeof saved.volume === 'number') md_state.volume = saved.volume;
                 if (typeof saved.muted === 'boolean') md_state.muted = saved.muted;
+                if (typeof saved.autoStopOnHide === 'boolean') md_state.autoStopOnHide = saved.autoStopOnHide;
                 if (saved.override) md_override = saved.override;
                 if (saved.tb_state) tb_state = saved.tb_state;
                 if (saved.bgMode) {
@@ -637,6 +652,7 @@ function setBgMode(mode) {
             if (typeof saved.visible === 'boolean') md_state.visible = saved.visible;
             if (typeof saved.volume === 'number') md_state.volume = saved.volume;
             if (typeof saved.muted === 'boolean') md_state.muted = saved.muted;
+            if (typeof saved.autoStopOnHide === 'boolean') md_state.autoStopOnHide = saved.autoStopOnHide;
             if (saved.override) md_override = saved.override;
             if (saved.tb_state) tb_state = saved.tb_state;
             if (saved.bgMode) bgMode = saved.bgMode;
@@ -663,7 +679,7 @@ function setBgMode(mode) {
         tb_setWidthType(tb_state.widthType || 'auto');
         tb_setPreset(tb_state.preset || 'p1');
         setBgMode(bgMode || 'transparent');
-	setSlideDir(slideDirection || 'slide-up');
+        setSlideDir(slideDirection || 'slide-up');
         tb_renderRealtimeBtn();
         renderAutoSlideUI();
 
@@ -700,9 +716,21 @@ function setBgMode(mode) {
         var n = MEDIA_LIST.length;
         md_go((md_state.index + step + n) % n);
     }
+
+    function md_toggleAutoStopOnHide() {
+        md_state.autoStopOnHide = !md_state.autoStopOnHide;
+        md_save();
+        md_render();
+    }
+
     function md_toggleVisible() {
         md_state.visible = !md_state.visible;
         md_bc.postMessage({ type: 'MEDIA_VISIBLE', visible: md_state.visible });
+
+        if (!md_state.visible && md_state.autoStopOnHide && md_isVideo(md_state.index)) {
+            md_videoCmd('pause');
+        }
+
         md_save();
         md_render();
     }
@@ -927,6 +955,13 @@ function setBgMode(mode) {
         var lo = md_loopOf(i);
         lb.className = lo ? 'on' : 'off';
         lb.innerText = lo ? '🔁 LOOP: ON' : '⛔ LOOP: OFF';
+
+        var asBtn = md_$('md-autostop');
+        if (asBtn) {
+            asBtn.className = md_state.autoStopOnHide ? 'on' : 'off';
+            asBtn.innerText = md_state.autoStopOnHide ? 'ON' : 'OFF';
+        }
+
         if (!isVid) {
             md_$('md-time').innerText = '00:00';
             md_$('md-dur').innerText = '00:00';
@@ -966,7 +1001,7 @@ function setBgMode(mode) {
 
     function md_buildGrid() {
         var grid = md_$('md-grid');
-        grid.innerHTML = ''; // ล้างค่าเก่าป้องกันการเบิ้ล
+        grid.innerHTML = '';
         MEDIA_LIST.forEach(function (item, i) {
             var vid = md_isVideo(i);
             var card = document.createElement('div');
@@ -977,18 +1012,14 @@ function setBgMode(mode) {
             thumb.className = 'thumb';
             var m;
 
-            // ตรวจสอบว่ามีการกำหนด Thumbnail มาหรือไม่
             if (item.thumb) {
-                // ถ้ามี Thumbnail ให้แสดงภาพจาก thumb ก่อนเสมอ
                 m = document.createElement('img');
                 m.src = MEDIA_BASE + item.thumb;
             } else if (vid) {
-                // ถ้าเป็นวิดีโอและไม่มี Thumbnail ให้ดึงเฟรมแรกของวิดีโอ
                 m = document.createElement('video');
                 m.muted = true; m.preload = 'metadata';
                 m.src = MEDIA_BASE + item.file + '#t=0.5';
             } else {
-                // ถ้าไม่มี Thumbnail และเป็นภาพปกติ ให้แสดงภาพนั้นเลย
                 m = document.createElement('img');
                 m.src = MEDIA_BASE + item.file;
             }

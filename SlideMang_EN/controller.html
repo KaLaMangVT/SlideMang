@@ -20,7 +20,7 @@
         h2 { margin: 0 0 12px; color: #007bff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
         h2 small { color: #aaa; font-weight: normal; font-size: 13px; margin-left: 8px; }
         .h2-left { display: flex; align-items: center; gap: 10px; }
-        .h2-right { display: flex; align-items: center; gap: 8px; }
+        .h2-right { display: flex; align-items: center; gap: 8px; z-index: 2; }
 
         button { cursor: pointer; border: none; border-radius: 4px; background: #444; color: white; transition: 0.1s; font-family: inherit; }
         button:hover { background: #555; }
@@ -104,6 +104,12 @@
         #md-play.playing { background: #e67e22; }
         #md-loop.on { background: #0277bd; }
         #md-loop.off { background: #8b0000; }
+
+        /* Style for Stop On Hide Switch */
+        #md-autostop { padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        #md-autostop.on { background: #c62828; color: #fff; border: 1px solid #ef5350; }
+        #md-autostop.off { background: #222; color: #aaa; border: 1px solid #444; }
+
         .vol { display: flex; align-items: center; gap: 8px; margin-left: auto; background: #1a1a1a; padding: 6px 10px; border-radius: 5px; }
         .vol input { width: 120px; }
         .vol span { font-size: 12px; color: #aaa; min-width: 36px; text-align: right; }
@@ -156,21 +162,19 @@
                 <input type="file" id="file-selector" accept=".json" style="display: none;" onchange="io_handleFileSelect(event)">
                 <button type="button" class="icon-btn" onclick="document.getElementById('file-selector').click()" title="Load Config from save.json">📁</button>
                 
-                <!-- Save button for direct writing to save.json via Chrome -->
                 <button type="button" class="btn-collapse" onclick="io_saveToFile()" title="Save directly to save.json" style="background: #1b7a34; color: #fff;">💾 Save to save.json</button>
-
                 <button type="button" class="btn-collapse" id="btn-toggle-settings" onclick="toggleSettingsPanel()">▲ Hide Presets & Position</button>
             </div>
         </h2>
 
         <div id="credit-container" class="credit-box">
             <div>Creator: <span>KaLaMangVT</span></div>
-            <div>Ver: <span>1.0</span></div>
+            <div>Ver: <span>1.1</span></div>
             <div>Github: <span>https://github.com/KaLaMangVT/SlideMang</span></div>
         </div>
         
         <div id="settings-collapsible-panel" class="collapsible-content">
-            <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 6px;">Select Preset Design:</label>
+            <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 6px;">Select Design Preset:</label>
             <div class="preset-grid">
                 <label class="preset-card" id="card-p1" onclick="tb_setPreset('p1')"><input type="radio" name="tb-preset" value="p1"><div class="p-title">Preset 1</div></label>
                 <label class="preset-card" id="card-p2" onclick="tb_setPreset('p2')"><input type="radio" name="tb-preset" value="p2"><div class="p-title">Preset 2</div></label>
@@ -249,11 +253,11 @@
         <div class="title-grid" style="margin-top: 10px;">
             <div id="tb-header-container">
                 <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">Header:</label>
-                <textarea id="tb-input-header" rows="3" placeholder="Enter header..."></textarea>
+                <textarea id="tb-input-header" rows="3" placeholder="Type header..."></textarea>
             </div>
             <div>
-                <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">Body Text (HTML supported):</label>
-                <textarea id="tb-input-body" rows="3" placeholder="Enter body text..." oninput="tb_onBodyInput()"></textarea>
+                <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">Body Text: (Supports HTML)</label>
+                <textarea id="tb-input-body" rows="3" placeholder="Type news content..." oninput="tb_onBodyInput()"></textarea>
             </div>
         </div>
 
@@ -271,19 +275,19 @@
 
     <div style="height: 10px;"></div>
 
-    <!-- ===== 2. Media Control & Video Controller ===== -->
+    <!-- ===== 2. Middle Row: Media Control & Video Controller ===== -->
     <div class="top-row-grid">
         <!-- Media Control -->
         <div class="section" style="margin-bottom: 0;">
             <h2>🖼️ Media Control <div class="hint" style="margin-top: 8px;">Shortcuts: ← (Prev) &nbsp;|&nbsp; → (Next) &nbsp;|&nbsp; ↓ (Toggle Slide) &nbsp;|&nbsp; Space (Play/Pause)</div></h2>
             <div class="status-bar">
-                <span id="md-conn" class="badge off">● DISPLAY DISCONNECTED</span>
+                <span id="md-conn" class="badge off">● DISPLAY Disconnected</span>
                 <span id="md-now">—</span>
                 <span id="md-warn"></span>
             </div>
             <div class="nav-main">
                 <button class="btn-nav-small" id="md-prev" onclick="md_step(-1)">◀ PREV</button>
-                <button class="btn-large btn-vis on" id="md-vis" onclick="md_toggleVisible()">👁 Show</button>
+                <button class="btn-large btn-vis on" id="md-vis" onclick="md_toggleVisible()">👁 Showing</button>
                 <button class="btn-nav-small" id="md-next" onclick="md_step(1)">NEXT ▶</button>
                 <div class="auto-slide-box">
                     <button type="button" class="auto-btn off" id="auto-toggle-btn" onclick="toggleAutoSlide()">Auto Slide Off</button>
@@ -295,7 +299,16 @@
 
         <!-- Video Controller -->
         <div class="section" style="margin-bottom: 0;">
-            <h2>🎬 Video Controller <small id="md-vid-title"></small></h2>
+            <h2>
+                <div class="h2-left">
+                    <span>🎬 Video Controller</span>
+                    <small id="md-vid-title"></small>
+                </div>
+                <div class="h2-right" style="gap: 8px;">
+                    <span style="font-size: 11px; color: #aaa;">Stop on Hide:</span>
+                    <button type="button" id="md-autostop" class="off" onclick="md_toggleAutoStopOnHide()" title="Automatically pause video when hidden">OFF</button>
+                </div>
+            </h2>
             <div class="vid-only" id="md-vid-ctrl">
                 <div class="time-row">
                     <span id="md-time">00:00</span>
@@ -325,10 +338,10 @@
         <h2>
             <div class="h2-left">
                 <span>🎞️ Quick Panel</span>
-                <small>Click card to jump directly to media</small>
+                <small>Click any card to jump to that item instantly</small>
             </div>
             <div class="h2-right" style="gap: 5px; flex-wrap: wrap;">
-                <!-- Slide Direction Options + Random + Cut + Fade -->
+                <!-- Slide Direction & Random -->
                 <span style="font-size: 11px; color: #aaa;">Dir:</span>
                 <button type="button" class="opt-btn" id="btn-dir-cut" onclick="setSlideDir('cut')" title="Cut (Instant)">✂️</button>
                 <button type="button" class="opt-btn" id="btn-dir-fade" onclick="setSlideDir('fade')" title="Fade (Smooth)">✨</button>
@@ -340,12 +353,12 @@
                 
                 <span style="color: #444; margin: 0 2px;">|</span>
 
-                <!-- Background Mode Presets -->
-                <span style="font-size: 11px; color: #aaa;">BG:</span>
+                <!-- Background Modes -->
+                <span style="font-size: 11px; color: #aaa;">Background:</span>
                 <button type="button" class="opt-btn" id="btn-bg-bg1" onclick="setBgMode('bg1')">BG 1</button>
                 <button type="button" class="opt-btn" id="btn-bg-bg2" onclick="setBgMode('bg2')">BG 2</button>
                 <button type="button" class="opt-btn" id="btn-bg-bg3" onclick="setBgMode('bg3')">BG 3</button>
-                <button type="button" class="opt-btn" id="btn-bg-transparent" onclick="setBgMode('transparent')">Transparent</button>
+                <button type="button" class="opt-btn" id="btn-bg-transparent" onclick="setBgMode('transparent')">🚫 Transparent</button>
             </div>
         </h2>
         <div class="media-grid" id="md-grid"></div>
@@ -357,7 +370,7 @@
     var md_bc = new BroadcastChannel(MEDIA_CHANNEL);
     var VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
 
-    var md_state = { index: 0, visible: MEDIA_START_VISIBLE, volume: 1, muted: false };
+    var md_state = { index: 0, visible: MEDIA_START_VISIBLE, volume: 1, muted: false, autoStopOnHide: false };
     var md_override = {};
     var md_status = null;
     var md_statusAt = 0;
@@ -373,7 +386,7 @@
     var tb_state = {
         visible: false,
         header: 'Breaking News',
-        body: "Welcome to today's livestream",
+        body: 'Welcome to today\'s livestream session',
         preset: 'p1',
         hAlign: 'center',
         edgeDist: 5,
@@ -387,7 +400,7 @@
         creditOpen: false
     };
 
-    var slideDirection = 'slide-up'; // Default
+    var slideDirection = 'slide-up';
 
     function setSlideDir(dir) {
         slideDirection = dir;
@@ -404,7 +417,7 @@
         md_save();
     }
 
-    var bgMode = 'transparent'; // Default
+    var bgMode = 'transparent';
 
     function setBgMode(mode) {
         bgMode = mode;
@@ -449,7 +462,9 @@
         try {
             var fullData = {
                 index: md_state.index, visible: md_state.visible,
-                volume: md_state.volume, muted: md_state.muted, override: md_override,
+                volume: md_state.volume, muted: md_state.muted, 
+                autoStopOnHide: md_state.autoStopOnHide,
+                override: md_override,
                 tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
                 autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
             };
@@ -460,7 +475,9 @@
     async function io_saveToFile() {
         var fullData = {
             index: md_state.index, visible: md_state.visible,
-            volume: md_state.volume, muted: md_state.muted, override: md_override,
+            volume: md_state.volume, muted: md_state.muted, 
+            autoStopOnHide: md_state.autoStopOnHide,
+            override: md_override,
             tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
             autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
         };
@@ -564,7 +581,9 @@
     function io_copyConfig() {
         var fullData = {
             index: md_state.index, visible: md_state.visible,
-            volume: md_state.volume, muted: md_state.muted, override: md_override,
+            volume: md_state.volume, muted: md_state.muted, 
+            autoStopOnHide: md_state.autoStopOnHide,
+            override: md_override,
             tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
             autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
         };
@@ -592,6 +611,7 @@
                 if (typeof saved.visible === 'boolean') md_state.visible = saved.visible;
                 if (typeof saved.volume === 'number') md_state.volume = saved.volume;
                 if (typeof saved.muted === 'boolean') md_state.muted = saved.muted;
+                if (typeof saved.autoStopOnHide === 'boolean') md_state.autoStopOnHide = saved.autoStopOnHide;
                 if (saved.override) md_override = saved.override;
                 if (saved.tb_state) tb_state = saved.tb_state;
                 if (saved.bgMode) {
@@ -617,7 +637,7 @@
                 md_$('io-msg').innerText = '✓ Loaded successfully!';
                 setTimeout(function() { md_$('io-msg').innerText = ''; }, 3000);
             } catch (err) {
-                alert('Invalid JSON file format');
+                alert('Invalid JSON file format. Please check the file content.');
             }
             event.target.value = '';
         };
@@ -632,6 +652,7 @@
             if (typeof saved.visible === 'boolean') md_state.visible = saved.visible;
             if (typeof saved.volume === 'number') md_state.volume = saved.volume;
             if (typeof saved.muted === 'boolean') md_state.muted = saved.muted;
+            if (typeof saved.autoStopOnHide === 'boolean') md_state.autoStopOnHide = saved.autoStopOnHide;
             if (saved.override) md_override = saved.override;
             if (saved.tb_state) tb_state = saved.tb_state;
             if (saved.bgMode) bgMode = saved.bgMode;
@@ -695,9 +716,21 @@
         var n = MEDIA_LIST.length;
         md_go((md_state.index + step + n) % n);
     }
+
+    function md_toggleAutoStopOnHide() {
+        md_state.autoStopOnHide = !md_state.autoStopOnHide;
+        md_save();
+        md_render();
+    }
+
     function md_toggleVisible() {
         md_state.visible = !md_state.visible;
         md_bc.postMessage({ type: 'MEDIA_VISIBLE', visible: md_state.visible });
+
+        if (!md_state.visible && md_state.autoStopOnHide && md_isVideo(md_state.index)) {
+            md_videoCmd('pause');
+        }
+
         md_save();
         md_render();
     }
@@ -745,7 +778,7 @@
             edgeBox.style.display = 'none';
         } else {
             edgeBox.style.display = 'block';
-            md_$('tb-label-edge').innerText = 'Distance from ' + (hAlignVal === 'left' ? 'Left' : 'Right') + ' (%):';
+            md_$('tb-label-edge').innerText = (hAlignVal === 'left' ? 'Left' : 'Right') + ' Distance (%):';
         }
         tb_applyDraft();
     }
@@ -847,7 +880,7 @@
     function tb_render() {
         var btn = md_$('tb-btn-vis');
         btn.className = 'btn-title-vis ' + (tb_state.visible ? 'on' : 'off');
-        btn.innerText = tb_state.visible ? '📺 ON AIR : ON (Visible)' : '📺 ON AIR : OFF (Hidden)';
+        btn.innerText = tb_state.visible ? '📺 ON AIR : ON (Showing)' : '📺 ON AIR : OFF (Hidden)';
         
         var cleanH = tb_state.showHeader ? '[' + tb_state.header.replace(/<br>/g, ' ') + '] ' : '';
         var cleanB = tb_state.body.replace(/<br>/g, ' ');
@@ -902,7 +935,7 @@
 
         var vis = md_$('md-vis');
         vis.className = 'btn-large btn-vis ' + (md_state.visible ? 'on' : 'off');
-        vis.innerText = md_state.visible ? '👁 Show' : '🚫 Hide';
+        vis.innerText = md_state.visible ? '👁 Showing' : '🚫 Hidden';
 
         var cards = document.querySelectorAll('.media-card');
         for (var c = 0; c < cards.length; c++) {
@@ -922,6 +955,13 @@
         var lo = md_loopOf(i);
         lb.className = lo ? 'on' : 'off';
         lb.innerText = lo ? '🔁 LOOP: ON' : '⛔ LOOP: OFF';
+
+        var asBtn = md_$('md-autostop');
+        if (asBtn) {
+            asBtn.className = md_state.autoStopOnHide ? 'on' : 'off';
+            asBtn.innerText = md_state.autoStopOnHide ? 'ON' : 'OFF';
+        }
+
         if (!isVid) {
             md_$('md-time').innerText = '00:00';
             md_$('md-dur').innerText = '00:00';
@@ -956,7 +996,7 @@
         var ok = (Date.now() - md_statusAt) < 2000;
         var b = md_$('md-conn');
         b.className = 'badge ' + (ok ? 'on' : 'off');
-        b.innerText = ok ? '● DISPLAY CONNECTED' : '● DISPLAY DISCONNECTED';
+        b.innerText = ok ? '● DISPLAY Connected' : '● DISPLAY Disconnected';
     }
 
     function md_buildGrid() {
