@@ -1,0 +1,27 @@
+{
+  "index": 2,
+  "visible": true,
+  "volume": 1,
+  "muted": false,
+  "override": {},
+  "tb_state": {
+    "visible": true,
+    "header": "ข่าวด่วน",
+    "body": "ต้อนรับเข้าสู่รายการไลฟ์สตรีมวันนี้",
+    "preset": "p1",
+    "hAlign": "left",
+    "edgeDist": "5",
+    "bottomDist": "5",
+    "showHeader": true,
+    "align": "left",
+    "widthType": "percent",
+    "customWidth": "80",
+    "settingsOpen": true
+  },
+  "bgMode": "transparent",
+  "slideDirection": "fade",
+  "autoSlide": {
+    "enabled": false,
+    "intervalSec": 3
+  }
+}

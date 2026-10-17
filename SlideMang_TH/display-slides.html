@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Media Display</title>
+    <style>
+        body, html {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        overflow: hidden; background: transparent; /* เริ่มต้นเป็นโปร่งใส */
+        background-size: cover;
+        background-position: center;
+        transition: background-image 0.4s ease-in-out;
+    }
+        /* ปรับ Container ให้ใช้ opacity และ visibility ควบคุมการเฟดเปิด-ปิด */
+        .container {
+            position: relative; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+        }
+        .container.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .media-item {
+            position: absolute; max-width: 100%; max-height: 100%;
+            object-fit: contain; 
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(0);
+        }
+
+        .media-item.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* เอฟเฟกต์ตอนสไลด์ขึ้น (Next) */
+        .media-item.slide-up-enter {
+            opacity: 0;
+            visibility: visible;
+            transform: translateY(100%);
+        }
+        .media-item.slide-up-enter-active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .media-item.slide-up-exit {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .media-item.slide-up-exit-active {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-100%);
+transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+
+        /* เอฟเฟกต์ตอนสไลด์ลง (Prev) */
+        .media-item.slide-down-enter {
+            opacity: 0;
+            visibility: visible;
+            transform: translateY(-100%);
+        }
+        .media-item.slide-down-enter-active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .media-item.slide-down-exit {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .media-item.slide-down-exit-active {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(100%);
+transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+/* เอฟเฟกต์ตอนสไลด์ไปทางซ้าย (Next ไปทางซ้าย) */
+        .media-item.slide-left-enter { opacity: 0; visibility: visible; transform: translateX(100%); }
+        .media-item.slide-left-enter-active { opacity: 1; visibility: visible; transform: translateX(0); transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;}
+        .media-item.slide-left-exit { opacity: 1; visibility: visible; transform: translateX(0); }
+        .media-item.slide-left-exit-active { opacity: 0.5; visibility: hidden; transform: translateX(-100%); transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;}
+
+        /* เอฟเฟกต์ตอนสไลด์ไปทางขวา (Prev ไปทางขวา) */
+        .media-item.slide-right-enter { opacity: 0; visibility: visible; transform: translateX(-100%); }
+        .media-item.slide-right-enter-active { opacity: 1; visibility: visible; transform: translateX(0); transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;}
+        .media-item.slide-right-exit { opacity: 1; visibility: visible; transform: translateX(0); }
+        .media-item.slide-right-exit-active { opacity: 0.5; visibility: hidden; transform: translateX(100%); transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out;}
+
+/* เอฟเฟกต์ตอนเปลี่ยนภาพแบบเฟดอยู่กับที่ (Fade) */
+        .media-item.fade-enter { opacity: 0; visibility: hidden; transform: translateY(0); }
+        .media-item.fade-enter-active { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out; }
+        .media-item.fade-exit { opacity: 1; visibility: visible; transform: translateY(0); }
+        .media-item.fade-exit-active { opacity: 0.5; visibility: hidden; transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="container"></div>
+
+    <script src="./media-config.js"></script>
+    <script>
+    var bc = new BroadcastChannel(MEDIA_CHANNEL);
+    var container = document.getElementById('container');
+    var mediaElements = [];
+    var videoElements = [];
+    var slideDirectionMode = 'slide-up'; // ค่าเริ่มต้น หรือ 'random'
+    var lastRandomDir = '';              // เก็บค่าทิศทางสุ่มรอบที่แล้วเพื่อกันซ้ำ
+
+    var currentState = {
+        index: 0,
+        visible: MEDIA_START_VISIBLE,
+        volume: 1,
+        muted: false,
+        loops: [],
+        titleBar: null
+    };
+
+    var lastIndex = 0;
+
+    var VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
+    function isVideo(item) {
+        return item.type ? item.type === 'video' : VIDEO_EXT.test(item.file);
+    }
+
+    function initMedia() {
+        MEDIA_LIST.forEach(function(item, i) {
+            var el;
+            if (isVideo(item)) {
+                el = document.createElement('video');
+                el.src = MEDIA_BASE + item.file;
+                el.preload = 'auto';
+                el.playsInline = true;
+                el.loop = (item.loop !== false);
+                el.muted = currentState.muted;
+                el.volume = currentState.volume;
+                el.className = 'media-item';
+
+                if (item.fit) el.style.objectFit = item.fit;
+
+                el.addEventListener('timeupdate', function() {
+                    if (i === currentState.index) sendStatus('playing');
+                });
+                el.addEventListener('play', function() { sendStatus('playing'); });
+                el.addEventListener('pause', function() { sendStatus('paused'); });
+                el.addEventListener('ended', function() {
+                    if (!el.loop) sendStatus('ended');
+                });
+                el.addEventListener('error', function() { sendStatus('error', true); });
+
+                videoElements[i] = el;
+            } else {
+                el = document.createElement('img');
+                el.src = MEDIA_BASE + item.file;
+                el.className = 'media-item';
+
+                if (item.fit) el.style.objectFit = item.fit;
+
+                el.addEventListener('error', function() { sendStatus('error', true); });
+            }
+            container.appendChild(el);
+            mediaElements[i] = el;
+        });
+    }
+
+    // ปรับให้ใช้การสลับคลาส .show แทน display เพื่อให้เกิดเอฟเฟกต์ Fade
+    function updateVisibility() {
+        if (currentState.visible) {
+            container.classList.add('show');
+        } else {
+            container.classList.remove('show');
+        }
+    }
+
+    function applyLoopSettings() {
+        if (!currentState.loops) return;
+        mediaElements.forEach(function(el, i) {
+            if (isVideo(MEDIA_LIST[i])) {
+                el.loop = currentState.loops[i] !== false;
+            }
+        });
+    }
+
+function getRandomDirection() {
+        var dirs = ['slide-up', 'slide-down', 'slide-left', 'slide-right'];
+        // กรองเอาทิศทางที่ไม่ซ้ำกับรอบล่าสุดออก
+        var available = dirs.filter(function(d) { return d !== lastRandomDir; });
+        var chosen = available[Math.floor(Math.random() * available.length)];
+        lastRandomDir = chosen;
+        return chosen;
+    }
+
+    function switchMedia(newIndex) {
+        var total = MEDIA_LIST.length;
+        var isForward = (newIndex > lastIndex && !(lastIndex === 0 && newIndex === total - 1)) || (lastIndex === total - 1 && newIndex === 0);
+        
+        var dir = slideDirectionMode;
+        if (dir === 'random') {
+            dir = getRandomDirection();
+        }
+
+        // ถ้าเลือกโหมด cut ไม่ต้องใส่แอนิเมชันสไลด์หรือเฟด
+        if (dir === 'cut') {
+            mediaElements.forEach(function(el, i) {
+                el.className = 'media-item';
+                if (i === newIndex) {
+                    el.classList.add('active'); // แสดงภาพใหม่ทันที
+                    if (isVideo(MEDIA_LIST[i])) {
+                        el.currentTime = 0;
+                        el.play().catch(function() { sendStatus('blocked', false, true); });
+                    }
+                } else {
+                    if (isVideo(MEDIA_LIST[i])) {
+                        el.pause();
+                    }
+                }
+            });
+        } else {
+            // โหมดเดิม (slide ต่างๆ หรือ fade)
+            var animIn = dir + '-enter';
+            var animOut = dir + '-exit';
+
+            if (dir !== 'fade' && slideDirectionMode !== 'random' && !isForward) {
+                if (dir === 'slide-up') animIn = 'slide-down-enter', animOut = 'slide-down-exit';
+                else if (dir === 'slide-down') animIn = 'slide-up-enter', animOut = 'slide-up-exit';
+                else if (dir === 'slide-left') animIn = 'slide-right-enter', animOut = 'slide-right-exit';
+                else if (dir === 'slide-right') animIn = 'slide-left-enter', animOut = 'slide-left-exit';
+            }
+
+            mediaElements.forEach(function(el, i) {
+                el.className = 'media-item';
+
+                if (i === newIndex) {
+                    el.classList.add(animIn);
+                    setTimeout(function() {
+                        el.classList.add(animIn + '-active');
+                        el.classList.add('active');
+                    }, 20);
+
+                    if (isVideo(MEDIA_LIST[i])) {
+                        el.currentTime = 0;
+                        el.play().catch(function() { sendStatus('blocked', false, true); });
+                    }
+                } else if (i === lastIndex && lastIndex !== newIndex) {
+                    el.classList.add('active');
+                    el.classList.add(animOut);
+                    setTimeout(function() {
+                        el.classList.add(animOut + '-active');
+                        el.classList.remove('active');
+                    }, 20);
+
+                    if (isVideo(MEDIA_LIST[i])) {
+                        el.pause();
+                    }
+                } else {
+                    if (isVideo(MEDIA_LIST[i])) {
+                        el.pause();
+                    }
+                }
+            });
+        }
+
+        lastIndex = newIndex;
+        currentState.index = newIndex;
+        sendStatus(isVideo(MEDIA_LIST[newIndex]) ? (mediaElements[newIndex].paused ? 'paused' : 'playing') : 'image');
+    }
+
+    function sendStatus(stateStr, failed, blocked) {
+        var item = MEDIA_LIST[currentState.index];
+        var isVid = isVideo(item);
+        var el = mediaElements[currentState.index];
+
+        bc.postMessage({
+            type: 'MEDIA_STATUS',
+            index: currentState.index,
+            kind: isVid ? 'video' : 'image',
+            state: isVid ? (el.paused ? 'paused' : 'playing') : 'static',
+            time: isVid ? el.currentTime : 0,
+            duration: isVid ? el.duration : 0,
+            failed: !!failed,
+            blocked: !!blocked
+        });
+    }
+
+    bc.onmessage = function(ev) {
+        var d = ev.data;
+        if (!d || !d.type) return;
+
+        if (d.type === 'MEDIA_SYNC') {
+            currentState.index = d.index;
+            currentState.visible = d.visible;
+            currentState.volume = d.volume;
+            currentState.muted = d.muted;
+            currentState.loops = d.loops;
+            lastIndex = d.index;
+if (d.bgMode) applyBackground(d.bgMode);
+            updateVisibility();
+            applyLoopSettings();
+            
+            mediaElements.forEach(function(el, i) {
+                if (isVideo(MEDIA_LIST[i])) {
+                    el.volume = currentState.volume;
+                    el.muted = currentState.muted;
+                }
+            });
+            switchMedia(currentState.index);
+        }
+        else if (d.type === 'MEDIA_CHANGE') {
+            switchMedia(d.index);
+        }
+        else if (d.type === 'MEDIA_VISIBLE') {
+            currentState.visible = d.visible;
+            updateVisibility();
+        }
+        else if (d.type === 'MEDIA_LOOP') {
+            if (!currentState.loops) currentState.loops = [];
+            currentState.loops[d.index] = d.loop;
+            applyLoopSettings();
+        }
+        else if (d.type === 'MEDIA_VOLUME') {
+            currentState.volume = d.volume;
+            currentState.muted = d.muted;
+            mediaElements.forEach(function(el, i) {
+                if (isVideo(MEDIA_LIST[i])) {
+                    el.volume = currentState.volume;
+                    el.muted = currentState.muted;
+                }
+            });
+        }
+        else if (d.type === 'MEDIA_VIDEO') {
+            var el = mediaElements[currentState.index];
+            if (!isVideo(MEDIA_LIST[currentState.index])) return;
+
+            if (d.action === 'play') el.play().catch(function() {});
+            else if (d.action === 'pause') el.pause();
+            else if (d.action === 'stop') { el.pause(); el.currentTime = 0; }
+            else if (d.action === 'seek' && typeof d.time === 'number') el.currentTime = d.time;
+        }
+else if (d.type === 'BG_CHANGE') {
+    applyBackground(d.mode);
+}
+else if (d.type === 'SLIDE_DIR_CHANGE') {
+        slideDirectionMode = d.direction;
+    }
+
+function applyBackground(mode) {
+        if (mode === 'transparent' || typeof MEDIA_BGS === 'undefined' || !MEDIA_BGS) {
+            document.body.style.backgroundImage = 'none';
+        } else if (mode === 'bg1' && MEDIA_BGS[0]) {
+            document.body.style.backgroundImage = 'url("' + MEDIA_BASE + MEDIA_BGS[0] + '")';
+        } else if (mode === 'bg2' && MEDIA_BGS[1]) {
+            document.body.style.backgroundImage = 'url("' + MEDIA_BASE + MEDIA_BGS[1] + '")';
+        } else if (mode === 'bg3' && MEDIA_BGS[2]) {
+            document.body.style.backgroundImage = 'url("' + MEDIA_BASE + MEDIA_BGS[2] + '")';
+        } else {
+            document.body.style.backgroundImage = 'none';
+        }
+    }
+    };
+
+    initMedia();
+    updateVisibility();
+    bc.postMessage({ type: 'MEDIA_HELLO' });
+
+    setInterval(function() {
+        var item = MEDIA_LIST[currentState.index];
+        if (isVideo(item)) {
+            var el = mediaElements[currentState.index];
+            sendStatus(el.paused ? 'paused' : 'playing');
+        }
+    }, 1000);
+    </script>
+</body>
+</html>

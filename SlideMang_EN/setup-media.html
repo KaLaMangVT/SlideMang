@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Media Config Setup</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; max-width: 1150px; margin: 0 auto; }
+        h1 { color: #007bff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 22px; }
+        .section { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
+        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; }
+        input[type="text"], input[type="number"], select { width: 100%; height: 36px; padding: 6px 10px; background: #151515; border: 1px solid #444; color: #fff; border-radius: 4px; box-sizing: border-box; margin-bottom: 0; font-family: inherit; }
+        input[type="checkbox"] { accent-color: #007bff; transform: scale(1.2); margin-right: 6px; }
+        button { cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; padding: 10px 16px; font-weight: bold; font-family: inherit; transition: 0.1s; height: 36px; }
+        button:hover { background: #0056b3; }
+        .btn-danger { background: #8b0000; }
+        .btn-danger:hover { background: #b30000; }
+        .btn-secondary { background: #444; }
+        .btn-secondary:hover { background: #555; }
+        .btn-success { background: #1b7a34; }
+        .btn-success:hover { background: #2e7d32; }
+        
+        .media-item-row { 
+            background: #1f1f1f; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-bottom: 10px; 
+            display: grid; grid-template-columns: 40px 2fr 2fr 1fr 1fr 1.5fr auto auto auto; gap: 10px; align-items: center; 
+            cursor: grab; transition: background 0.2s, border-color 0.2s;
+        }
+        .media-item-row:active { cursor: grabbing; }
+        .media-item-row.dragging { opacity: 0.4; border: 2px dashed #007bff; }
+        @media (max-width: 1300px) { .media-item-row { grid-template-columns: 1fr; } }
+        
+        .row-field { display: flex; flex-direction: column; }
+        .file-input-group { display: flex; gap: 6px; }
+        .actions-bar { display: flex; gap: 10px; margin-top: 15px; align-items: center; flex-wrap: wrap; }
+        .msg { color: #a5d6a7; font-size: 13px; font-weight: bold; }
+        .checkbox-label { display: flex; align-items: center; cursor: pointer; font-size: 12px; height: 36px; user-select: none; }
+        .drag-handle { text-align: center; font-size: 18px; color: #666; cursor: grab; user-select: none; }
+        .drag-handle:hover { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <h1>⚙️ Media List & Config Setup Tool</h1>
+
+    <div class="section">
+        <h3>Global Settings</h3>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
+            <div>
+                <label>Media Base Path (e.g., ./media/ or URL):</label>
+                <input type="text" id="cfg-base" value="./media/">
+            </div>
+            <div>
+                <label>Channel Name:</label>
+                <input type="text" id="cfg-channel" value="obs_media_channel">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <label class="checkbox-label" style="height: 36px; margin-bottom: 0;">
+                    <input type="checkbox" id="cfg-visible" checked> Start Visible
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>🎨 Background Presets (3 Images)</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+            <div class="row-field">
+                <label>Background 1 (BG 1):</label>
+                <div class="file-input-group">
+                    <input type="text" id="cfg-bg1" value="" placeholder="e.g. bg1.png">
+                    <input type="file" id="native-bg1" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg1')">
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg1').click()" style="padding: 0 10px;">📁</button>
+                </div>
+            </div>
+            <div class="row-field">
+                <label>Background 2 (BG 2):</label>
+                <div class="file-input-group">
+                    <input type="text" id="cfg-bg2" value="" placeholder="e.g. bg2.png">
+                    <input type="file" id="native-bg2" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg2')">
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg2').click()" style="padding: 0 10px;">📁</button>
+                </div>
+            </div>
+            <div class="row-field">
+                <label>Background 3 (BG 3):</label>
+                <div class="file-input-group">
+                    <input type="text" id="cfg-bg3" value="" placeholder="e.g. bg3.png">
+                    <input type="file" id="native-bg3" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg3')">
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg3').click()" style="padding: 0 10px;">📁</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Media List (MEDIA_LIST) <span style="font-size:12px; color:#888; font-weight:normal;">(Drag rows or use ▲▼ buttons to reorder)</span></h3>
+            <button type="button" onclick="addItem()">+ Add New Item</button>
+        </div>
+        <div id="items-container"></div>
+    </div>
+
+    <div class="actions-bar">
+        <button type="button" class="btn-success" onclick="saveConfigToFile()" style="font-size: 15px; padding: 0 24px;">💾 Save media-config.js</button>
+        
+        <input type="file" id="config-file-selector" accept=".js" style="display: none;" onchange="handleConfigLoad(event)">
+        <button type="button" class="btn-secondary" onclick="document.getElementById('config-file-selector').click()" style="font-size: 15px; padding: 0 20px;">📂 Load Existing media-config.js</button>
+
+        <span id="save-msg" class="msg"></span>
+    </div>
+
+    <script>
+        var defaultData = {
+            base: "./media/",
+            channel: "obs_media_channel",
+            startVisible: true,
+            bgs: ["", "", ""],
+            list: [
+                { file: "slide1.png", desc: "Promo Image 1" },
+                { file: "intro.mp4", desc: "Channel Intro Video", loop: false },
+                { file: "transparent.gif", desc: "Transparent Logo Animation" }
+            ]
+        };
+
+        function init() {
+            var saved = JSON.parse(localStorage.getItem('setup_media_data') || JSON.stringify(defaultData));
+            loadDataToUI(saved);
+        }
+
+        function loadDataToUI(data) {
+            document.getElementById('cfg-base').value = data.base || './media/';
+            document.getElementById('cfg-channel').value = data.channel || 'obs_media_channel';
+            document.getElementById('cfg-visible').checked = data.startVisible !== false;
+
+            var bgs = data.bgs || ["", "", ""];
+            document.getElementById('cfg-bg1').value = bgs[0] || "";
+            document.getElementById('cfg-bg2').value = bgs[1] || "";
+            document.getElementById('cfg-bg3').value = bgs[2] || "";
+
+            var container = document.getElementById('items-container');
+            container.innerHTML = '';
+            if (Array.isArray(data.list)) {
+                data.list.forEach(function(item) {
+                    addItemDOM(item.file, item.desc || '', item.type || '', item.fit || '', item.thumb || '', item.loop !== false);
+                });
+            }
+        }
+
+        function onBgFilePicked(input, targetId) {
+            if (input.files && input.files[0]) {
+                document.getElementById(targetId).value = input.files[0].name;
+            }
+        }
+
+        function handleConfigLoad(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var code = e.target.result;
+                    var parsedData = (function() {
+                        var MEDIA_BASE, MEDIA_CHANNEL, MEDIA_START_VISIBLE, MEDIA_BGS, MEDIA_LIST;
+                        try {
+                            eval(code);
+                            return {
+                                base: MEDIA_BASE,
+                                channel: MEDIA_CHANNEL,
+                                startVisible: MEDIA_START_VISIBLE,
+                                bgs: MEDIA_BGS || ["", "", ""],
+                                list: MEDIA_LIST
+                            };
+                        } catch (err) {
+                            return null;
+                        }
+                    })();
+
+                    if (!parsedData || !Array.isArray(parsedData.list)) {
+                        alert('Invalid media-config.js format or missing MEDIA_LIST');
+                        return;
+                    }
+
+                    loadDataToUI(parsedData);
+                    localStorage.setItem('setup_media_data', JSON.stringify(parsedData));
+
+                    var msg = document.getElementById('save-msg');
+                    msg.innerText = '✓ Loaded from media-config.js successfully!';
+                    setTimeout(function() { msg.innerText = ''; }, 3000);
+                } catch (err) {
+                    alert('Error reading file');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function addItem() {
+            addItemDOM('', '', '', '', '', true);
+        }
+
+        function addItemDOM(file, desc, type, fit, thumb, loop) {
+            var container = document.getElementById('items-container');
+            var div = document.createElement('div');
+            div.className = 'media-item-row';
+            div.draggable = true;
+            
+            var fileInputId = 'native-file-' + Math.random().toString(36).substr(2, 9);
+            var thumbInputId = 'native-thumb-' + Math.random().toString(36).substr(2, 9);
+
+            div.innerHTML = `
+                <div class="drag-handle" title="Drag to reorder">⠿</div>
+                <div class="row-field">
+                    <label>File Name:</label>
+                    <div class="file-input-group">
+                        <input type="text" class="inp-file" value="${file}" placeholder="e.g. image.png">
+                        <input type="file" id="${fileInputId}" style="display:none;" onchange="onFilePicked(this, 'file')">
+                        <button type="button" class="btn-secondary" onclick="document.getElementById('${fileInputId}').click()" title="Select file" style="padding: 0 10px;">📁</button>
+                    </div>
+                </div>
+                <div class="row-field">
+                    <label>Description:</label>
+                    <input type="text" class="inp-desc" value="${desc}" placeholder="Description">
+                </div>
+                <div class="row-field">
+                    <label>Type:</label>
+                    <select class="inp-type">
+                        <option value="" ${!type ? 'selected' : ''}>-- Auto --</option>
+                        <option value="image" ${type === 'image' ? 'selected' : ''}>image</option>
+                        <option value="video" ${type === 'video' ? 'selected' : ''}>video</option>
+                    </select>
+                </div>
+                <div class="row-field">
+                    <label>Fit Mode:</label>
+                    <select class="inp-fit">
+                        <option value="" ${!fit ? 'selected' : ''}>-- Default --</option>
+                        <option value="cover" ${fit === 'cover' ? 'selected' : ''}>cover</option>
+                        <option value="contain" ${fit === 'contain' ? 'selected' : ''}>contain</option>
+                    </select>
+                </div>
+                <div class="row-field">
+                    <label>Thumbnail:</label>
+                    <div class="file-input-group">
+                        <input type="text" class="inp-thumb" value="${thumb}" placeholder="e.g. thumb.jpg">
+                        <input type="file" id="${thumbInputId}" accept="image/*" style="display:none;" onchange="onFilePicked(this, 'thumb')">
+                        <button type="button" class="btn-secondary" onclick="document.getElementById('${thumbInputId}').click()" title="Select thumbnail" style="padding: 0 10px;">📁</button>
+                    </div>
+                </div>
+                <div class="row-field" style="justify-content: center;">
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="inp-loop" ${loop ? 'checked' : ''}> Loop
+                    </label>
+                </div>
+                <div class="row-field" style="display:flex; flex-direction:row; gap:4px; align-items:flex-end;">
+                    <button type="button" class="btn-secondary" onclick="moveRow(this, -1)" title="Move Up" style="padding:0 8px;">▲</button>
+                    <button type="button" class="btn-secondary" onclick="moveRow(this, 1)" title="Move Down" style="padding:0 8px;">▼</button>
+                </div>
+                <div class="row-field">
+                    <button type="button" class="btn-danger" onclick="this.closest('.media-item-row').remove()" style="padding:0 10px;">Delete</button>
+                </div>
+            `;
+
+            div.addEventListener('dragstart', function(e) {
+                div.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            div.addEventListener('dragend', function() {
+                div.classList.remove('dragging');
+                clearDragOverStyles();
+            });
+
+            div.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                var draggingItem = container.querySelector('.dragging');
+                if (draggingItem && draggingItem !== div) {
+                    var rect = div.getBoundingClientRect();
+                    var midY = rect.top + rect.height / 2;
+                    if (e.clientY < midY) {
+                        container.insertBefore(draggingItem, div);
+                    } else {
+                        container.insertBefore(draggingItem, div.nextSibling);
+                    }
+                }
+            });
+
+            container.appendChild(div);
+        }
+
+        function clearDragOverStyles() {
+            var rows = document.querySelectorAll('.media-item-row');
+            rows.forEach(function(r) { r.style.borderTop = ''; r.style.borderBottom = ''; });
+        }
+
+        function moveRow(btn, direction) {
+            var row = btn.closest('.media-item-row');
+            if (direction === -1 && row.previousElementSibling) {
+                row.parentNode.insertBefore(row, row.previousElementSibling);
+            } else if (direction === 1 && row.nextElementSibling) {
+                row.parentNode.insertBefore(row.nextElementSibling, row);
+            }
+        }
+
+        function onFilePicked(input, mode) {
+            if (input.files && input.files[0]) {
+                var fileName = input.files[0].name;
+                var row = input.closest('.media-item-row');
+                
+                if (mode === 'file') {
+                    var textInput = row.querySelector('.inp-file');
+                    var descInput = row.querySelector('.inp-desc');
+                    textInput.value = fileName;
+                    if (!descInput.value) {
+                        descInput.value = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+                    }
+                } else if (mode === 'thumb') {
+                    var thumbInput = row.querySelector('.inp-thumb');
+                    thumbInput.value = fileName;
+                }
+            }
+        }
+
+        function gatherData() {
+            var base = document.getElementById('cfg-base').value;
+            var channel = document.getElementById('cfg-channel').value;
+            var startVisible = document.getElementById('cfg-visible').checked;
+            
+            var bgs = [
+                document.getElementById('cfg-bg1').value.trim(),
+                document.getElementById('cfg-bg2').value.trim(),
+                document.getElementById('cfg-bg3').value.trim()
+            ];
+
+            var rows = document.querySelectorAll('.media-item-row');
+            var list = [];
+            rows.forEach(function(row) {
+                var file = row.querySelector('.inp-file').value.trim();
+                if (!file) return;
+                var desc = row.querySelector('.inp-desc').value.trim();
+                var type = row.querySelector('.inp-type').value;
+                var fit = row.querySelector('.inp-fit').value;
+                var thumb = row.querySelector('.inp-thumb').value.trim();
+                var loop = row.querySelector('.inp-loop').checked;
+
+                var item = { file: file };
+                if (desc) item.desc = desc;
+                if (type) item.type = type;
+                if (fit) item.fit = fit;
+                if (thumb) item.thumb = thumb;
+                if (!loop) item.loop = false;
+                list.push(item);
+            });
+
+            return { base: base, channel: channel, startVisible: startVisible, bgs: bgs, list: list };
+        }
+
+        async function saveConfigToFile() {
+            var data = gatherData();
+            localStorage.setItem('setup_media_data', JSON.stringify(data));
+
+            var scriptContent = 
+                "var MEDIA_BASE = " + JSON.stringify(data.base) + ";\n" +
+                "var MEDIA_CHANNEL = " + JSON.stringify(data.channel) + ";\n" +
+                "var MEDIA_START_VISIBLE = " + data.startVisible + ";\n\n" +
+                "var MEDIA_BGS = " + JSON.stringify(data.bgs || ["", "", ""]) + ";\n\n" +
+                "var MEDIA_LIST = " + JSON.stringify(data.list, null, 4) + ";\n";
+
+            try {
+                if (window.showSaveFilePicker) {
+                    const opts = {
+                        suggestedName: 'media-config.js',
+                        types: [{
+                            description: 'JavaScript Files',
+                            accept: { 'text/javascript': ['.js'] },
+                        }],
+                    };
+                    const handle = await window.showSaveFilePicker(opts);
+                    const writable = await handle.createWritable();
+                    await writable.write(scriptContent);
+                    await writable.close();
+
+                    var msg = document.getElementById('save-msg');
+                    msg.innerText = '✓ Saved media-config.js successfully!';
+                    setTimeout(function() { msg.innerText = ''; }, 3000);
+                    return;
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.log('File System API fallback to download', err);
+                } else {
+                    return;
+                }
+            }
+
+            var blob = new Blob([scriptContent], { type: 'text/javascript;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'media-config.js';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            var msg = document.getElementById('save-msg');
+            msg.innerText = '✓ Downloaded media-config.js!';
+            setTimeout(function() { msg.innerText = ''; }, 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>

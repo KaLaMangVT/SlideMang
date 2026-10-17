@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Media & Title Controller</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; margin: 0; }
+        h2 .opt-btn {
+            font-size: 11px;
+            padding: 4px 8px;
+            font-weight: normal;
+        }
+        h2 .opt-btn.selected {
+            background: #007bff;
+            border-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+        }
+        .section { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
+        h2 { margin: 0 0 12px; color: #007bff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        h2 small { color: #aaa; font-weight: normal; font-size: 13px; margin-left: 8px; }
+        .h2-left { display: flex; align-items: center; gap: 10px; }
+        .h2-right { display: flex; align-items: center; gap: 8px; }
+
+        button { cursor: pointer; border: none; border-radius: 4px; background: #444; color: white; transition: 0.1s; font-family: inherit; }
+        button:hover { background: #555; }
+        button:disabled { opacity: 0.35; cursor: not-allowed; }
+        input[type="range"], input[type="number"] { cursor: pointer; accent-color: #007bff; }
+        textarea {
+            width: 100%; padding: 8px 10px; background: #151515; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: inherit; box-sizing: border-box;
+        }
+        textarea:focus { border-color: #007bff; outline: none; }
+
+        .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; font-size: 14px; }
+        .badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge.on { background: #1b5e20; color: #a5d6a7; }
+        .badge.off { background: #5d1a1a; color: #ef9a9a; }
+        #md-now { font-weight: bold; }
+        #md-warn { color: #ffb74d; font-size: 12px; }
+
+        .nav-main { display: flex; gap: 10px; align-items: center; }
+        .btn-nav-small { padding: 12px 14px; font-size: 13px; font-weight: bold; background: #34495e; white-space: nowrap; }
+        .btn-large { padding: 12px; font-size: 16px; font-weight: bold; background: #34495e; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .btn-large small { font-size: 11px; font-weight: normal; color: #b0bec5; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-vis { flex: 0 0 90px; justify-content: center; }
+        .btn-vis.on  { background: #1b7a34; }
+        .btn-vis.off { background: #8b0000; }
+
+        .auto-slide-box { display: flex; align-items: center; gap: 10px; margin-top: 10px; background: #151515; padding: 8px 12px; border-radius: 6px; border: 1px solid #444; }
+        .auto-slide-box label { font-size: 13px; color: #aaa; }
+        .auto-btn { padding: 6px 14px; font-weight: bold; font-size: 13px; }
+        .auto-btn.on { background: #1b7a34; }
+        .auto-btn.off { background: #8b0000; }
+        #auto-interval { width: 45px; padding: 5px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; text-align: center; font-size: 13px; }
+
+        .top-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 1200px) { .top-row-grid { grid-template-columns: 1fr; } }
+
+        .icon-btn { background: #333; border: 1px solid #555; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 14px; padding: 0; }
+        .icon-btn:hover { background: #444; border-color: #777; }
+        .btn-collapse { background: #333; font-size: 12px; padding: 5px 10px; color: #007bff; border: 1px solid #555; border-radius: 4px; }
+        .btn-collapse:hover { background: #444; color: #3399ff; }
+        .collapsible-content { transition: max-height 0.3s ease; overflow: hidden; }
+        .collapsible-content.collapsed { display: none; }
+
+        .credit-box { background: #151515; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; color: #ddd; display: none; }
+        .credit-box.show { display: block; }
+        .credit-box div { margin-bottom: 4px; }
+        .credit-box span { color: #007bff; font-weight: bold; }
+
+        .preset-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+        .preset-card {
+            background: #151515; border: 2px solid #444; border-radius: 5px; padding: 8px 4px; cursor: pointer; text-align: center; transition: 0.15s;
+        }
+        .preset-card:hover { border-color: #777; }
+        .preset-card input[type="radio"] { display: none; }
+        .preset-card.selected { border-color: #007bff; background: #112233; box-shadow: 0 0 6px rgba(0, 123, 255, 0.4); }
+        .preset-card .p-title { font-weight: bold; font-size: 12px; color: #fff; }
+
+        .options-panel { background: #151515; padding: 12px; border-radius: 6px; border: 1px solid #444; margin-bottom: 12px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+        .opt-column { display: flex; flex-direction: column; gap: 8px; }
+        .opt-group { display: flex; flex-direction: column; gap: 6px; }
+        .opt-group label { font-size: 12px; color: #aaa; }
+        .btn-group-row { display: flex; gap: 6px; }
+        .opt-btn { background: #222; border: 1px solid #444; padding: 6px 12px; font-size: 13px; border-radius: 4px; cursor: pointer; }
+        .opt-btn:hover { background: #333; }
+        .opt-btn.selected { background: #007bff; border-color: #007bff; font-weight: bold; }
+
+        .title-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px; }
+        .title-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn-title-vis { padding: 10px 20px; font-weight: bold; font-size: 14px; }
+        .btn-title-vis.on { background: #1b7a34; }
+        .btn-title-vis.off { background: #8b0000; }
+        .btn-update { background: #007bff; padding: 10px 20px; font-weight: bold; font-size: 14px; }
+        .btn-update:hover { background: #0056b3; }
+        .preview-box { background: #151515; border: 1px solid #333; padding: 10px; border-radius: 4px; font-size: 13px; margin-top: 10px; }
+        .preview-box span { color: #888; }
+
+        .time-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .time-row input { flex: 1; }
+        .time-row span { font-variant-numeric: tabular-nums; font-size: 13px; color: #ccc; min-width: 44px; text-align: center; }
+        .vid-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .vid-btns button { padding: 9px 16px; font-weight: bold; font-size: 14px; }
+        #md-play.playing { background: #e67e22; }
+        #md-loop.on { background: #0277bd; }
+        #md-loop.off { background: #8b0000; }
+        .vol { display: flex; align-items: center; gap: 8px; margin-left: auto; background: #1a1a1a; padding: 6px 10px; border-radius: 5px; }
+        .vol input { width: 120px; }
+        .vol span { font-size: 12px; color: #aaa; min-width: 36px; text-align: right; }
+        .vol button { padding: 6px 10px; }
+        .vol button.muted { background: #8b0000; }
+        .vid-only.disabled { opacity: 0.35; pointer-events: none; }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            max-height: 380px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .media-grid::-webkit-scrollbar { width: 8px; }
+        .media-grid::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 4px; }
+        .media-grid::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        .media-grid::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .media-card { background: #333; border: 2px solid #444; border-radius: 6px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; height: fit-content; }
+        .media-card:hover { border-color: #777; }
+        .media-card.live { border-color: #e53935; box-shadow: 0 0 10px rgba(229, 57, 53, 0.55); }
+        .thumb { position: relative; width: 100%; height: 0; padding-bottom: 57.5%; background: #000; }
+        .thumb img, .thumb video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .thumb .num { position: absolute; left: 4px; top: 4px; background: rgba(0,0,0,0.75); padding: 1px 7px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+        .thumb .kind { position: absolute; right: 4px; top: 4px; background: rgba(0,0,0,0.75); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+        .thumb .live-tag { display: none; position: absolute; left: 4px; bottom: 4px; background: #e53935; padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+        .media-card.live .live-tag { display: block; }
+        .card-body { padding: 6px 8px 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .desc { font-size: 13px; line-height: 1.3; word-break: break-word; }
+        .loop-chip { font-size: 11px; padding: 3px 6px; align-self: flex-start; margin-top: auto; }
+        .loop-chip.on  { background: #0277bd; }
+        .loop-chip.off { background: #8b0000; }
+
+        .hint { font-size: 12px; color: #888; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 1. Title Bar Control ===== -->
+    <div class="section">
+        <h2>
+            <div class="h2-left">
+                <span>📰 Title Bar Control <div class="hint" style="margin-top: 8px;">Shortcut: ↑ (Toggle Title Bar)</div></span>
+            </div>
+            <div class="h2-right">
+                <button type="button" class="icon-btn" onclick="toggleCreditBox()" title="Show Credits">ℹ️</button>
+                <button type="button" class="icon-btn" onclick="io_copyConfig()" title="Copy Config to save.json">📋</button>
+                <input type="file" id="file-selector" accept=".json" style="display: none;" onchange="io_handleFileSelect(event)">
+                <button type="button" class="icon-btn" onclick="document.getElementById('file-selector').click()" title="Load Config from save.json">📁</button>
+                
+                <!-- Save button for direct writing to save.json via Chrome -->
+                <button type="button" class="btn-collapse" onclick="io_saveToFile()" title="Save directly to save.json" style="background: #1b7a34; color: #fff;">💾 Save to save.json</button>
+
+                <button type="button" class="btn-collapse" id="btn-toggle-settings" onclick="toggleSettingsPanel()">▲ Hide Presets & Position</button>
+            </div>
+        </h2>
+
+        <div id="credit-container" class="credit-box">
+            <div>Creator: <span>KaLaMangVT</span></div>
+            <div>Ver: <span>1.0</span></div>
+        </div>
+        
+        <div id="settings-collapsible-panel" class="collapsible-content">
+            <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 6px;">Select Preset Design:</label>
+            <div class="preset-grid">
+                <label class="preset-card" id="card-p1" onclick="tb_setPreset('p1')"><input type="radio" name="tb-preset" value="p1"><div class="p-title">Preset 1</div></label>
+                <label class="preset-card" id="card-p2" onclick="tb_setPreset('p2')"><input type="radio" name="tb-preset" value="p2"><div class="p-title">Preset 2</div></label>
+                <label class="preset-card" id="card-p3" onclick="tb_setPreset('p3')"><input type="radio" name="tb-preset" value="p3"><div class="p-title">Preset 3</div></label>
+                <label class="preset-card" id="card-p4" onclick="tb_setPreset('p4')"><input type="radio" name="tb-preset" value="p4"><div class="p-title">Preset 4</div></label>
+                <label class="preset-card" id="card-p5" onclick="tb_setPreset('p5')"><input type="radio" name="tb-preset" value="p5"><div class="p-title">Preset 5</div></label>
+                <label class="preset-card" id="card-p6" onclick="tb_setPreset('p6')"><input type="radio" name="tb-preset" value="p6"><div class="p-title">Preset 6</div></label>
+                <label class="preset-card" id="card-p7" onclick="tb_setPreset('p7')"><input type="radio" name="tb-preset" value="p7"><div class="p-title">Preset 7</div></label>
+                <label class="preset-card" id="card-p8" onclick="tb_setPreset('p8')"><input type="radio" name="tb-preset" value="p8"><div class="p-title">Preset 8</div></label>
+                <label class="preset-card" id="card-p9" onclick="tb_setPreset('p9')"><input type="radio" name="tb-preset" value="p9"><div class="p-title">Preset 9</div></label>
+                <label class="preset-card" id="card-p10" onclick="tb_setPreset('p10')"><input type="radio" name="tb-preset" value="p10"><div class="p-title">Preset 10</div></label>
+                <label class="preset-card" id="card-p11" onclick="tb_setPreset('p11')"><input type="radio" name="tb-preset" value="p11"><div class="p-title">Preset 11</div></label>
+                <label class="preset-card" id="card-p12" onclick="tb_setPreset('p12')"><input type="radio" name="tb-preset" value="p12"><div class="p-title">Preset 12</div></label>
+            </div>
+
+            <div class="options-panel">
+                <div class="opt-column">
+                    <div class="opt-group">
+                        <label>Horizontal Position:</label>
+                        <div class="btn-group-row">
+                            <button type="button" class="opt-btn" id="btn-halign-left" onclick="tb_setHAlign('left')">Left</button>
+                            <button type="button" class="opt-btn" id="btn-halign-center" onclick="tb_setHAlign('center')">Center</button>
+                            <button type="button" class="opt-btn" id="btn-halign-right" onclick="tb_setHAlign('right')">Right</button>
+                        </div>
+                    </div>
+                    <div class="opt-group" id="tb-box-edge" style="display: none;">
+                        <label id="tb-label-edge">Edge Distance (%):</label>
+                        <input type="number" id="tb-input-edgedist" value="5" min="0" max="40" oninput="tb_applyDraft()" style="width: 43px; padding: 6px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px;">
+                    </div>
+                </div>
+
+                <div class="opt-column">
+                    <div class="opt-group">
+                        <label>Bottom Distance (%):</label>
+                        <input type="number" id="tb-input-bottomdist" value="5" min="0" max="40" step="0.5" oninput="tb_applyDraft()" style="width: 43px; padding: 6px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px;">
+                    </div>
+                </div>
+
+                <div class="opt-column">
+                    <div class="opt-group">
+                        <label>Header Display:</label>
+                        <div class="btn-group-row">
+                            <button type="button" class="opt-btn" id="btn-head-show" onclick="tb_setShowHeader(true)">Show Header</button>
+                            <button type="button" class="opt-btn" id="btn-head-hide" onclick="tb_setShowHeader(false)">Hide Header</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="opt-column">
+                    <div class="opt-group">
+                        <label>Text Alignment:</label>
+                        <div class="btn-group-row">
+                            <button type="button" class="opt-btn" id="btn-align-left" onclick="tb_setAlign('left')">Left</button>
+                            <button type="button" class="opt-btn" id="btn-align-center" onclick="tb_setAlign('center')">Center</button>
+                            <button type="button" class="opt-btn" id="btn-align-right" onclick="tb_setAlign('right')">Right</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="opt-column">
+                    <div class="opt-group">
+                        <label>Box Width:</label>
+                        <div class="btn-group-row">
+                            <button type="button" class="opt-btn" id="btn-width-auto" onclick="tb_setWidthType('auto')">Auto</button>
+                            <button type="button" class="opt-btn" id="btn-width-percent" onclick="tb_setWidthType('percent')">Custom %</button>
+                        </div>
+                    </div>
+                    <div class="opt-group" id="tb-width-custom-box" style="display: none;">
+                        <label>Width (%):</label>
+                        <input type="number" id="tb-input-widthval" value="80" min="20" max="100" oninput="tb_applyDraft()" style="width: 43px; padding: 6px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="title-grid" style="margin-top: 10px;">
+            <div id="tb-header-container">
+                <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">Header:</label>
+                <textarea id="tb-input-header" rows="3" placeholder="Enter header..."></textarea>
+            </div>
+            <div>
+                <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">Body Text (HTML supported):</label>
+                <textarea id="tb-input-body" rows="3" placeholder="Enter body text..." oninput="tb_onBodyInput()"></textarea>
+            </div>
+        </div>
+
+        <div class="title-actions">
+            <button class="btn-title-vis off" id="tb-btn-vis" onclick="tb_toggleVisible()">📺 ON AIR : OFF (Hidden)</button>
+            <button class="btn-update" onclick="tb_applyDraft()">💾 Update to Screen</button>
+            <button type="button" class="opt-btn" id="btn-realtime-toggle" onclick="tb_toggleRealtime()" style="background: #222;">⚡ Real-time: Off</button>
+            <span id="io-msg" style="font-size: 12px; color: #a5d6a7; margin-left: 5px;"></span>
+        </div>
+        <div class="preview-box">
+            <span>On-Screen Status:</span>
+            <strong id="tb-live-text" style="color: #ffb74d; margin-left: 8px;">[Breaking News] Welcome to today's livestream</strong>
+        </div>
+    </div>
+
+    <div style="height: 10px;"></div>
+
+    <!-- ===== 2. Media Control & Video Controller ===== -->
+    <div class="top-row-grid">
+        <!-- Media Control -->
+        <div class="section" style="margin-bottom: 0;">
+            <h2>🖼️ Media Control <div class="hint" style="margin-top: 8px;">Shortcuts: ← (Prev) &nbsp;|&nbsp; → (Next) &nbsp;|&nbsp; ↓ (Toggle Slide) &nbsp;|&nbsp; Space (Play/Pause)</div></h2>
+            <div class="status-bar">
+                <span id="md-conn" class="badge off">● DISPLAY DISCONNECTED</span>
+                <span id="md-now">—</span>
+                <span id="md-warn"></span>
+            </div>
+            <div class="nav-main">
+                <button class="btn-nav-small" id="md-prev" onclick="md_step(-1)">◀ PREV</button>
+                <button class="btn-large btn-vis on" id="md-vis" onclick="md_toggleVisible()">👁 Show</button>
+                <button class="btn-nav-small" id="md-next" onclick="md_step(1)">NEXT ▶</button>
+                <div class="auto-slide-box">
+                    <button type="button" class="auto-btn off" id="auto-toggle-btn" onclick="toggleAutoSlide()">Auto Slide Off</button>
+                    <label for="auto-interval">Interval (s):</label>
+                    <input type="number" id="auto-interval" value="3" min="0.1" step="0.1" oninput="updateAutoInterval()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Controller -->
+        <div class="section" style="margin-bottom: 0;">
+            <h2>🎬 Video Controller <small id="md-vid-title"></small></h2>
+            <div class="vid-only" id="md-vid-ctrl">
+                <div class="time-row">
+                    <span id="md-time">00:00</span>
+                    <input type="range" id="md-seek" min="0" max="1000" value="0" step="1">
+                    <span id="md-dur">00:00</span>
+                </div>
+            </div>
+            <div class="vid-btns">
+                <span class="vid-only" id="md-vid-btns" style="display:flex; gap:10px;">
+                    <button id="md-play" onclick="md_playPause()">▶ PLAY</button>
+                    <button id="md-stop" onclick="md_stop()">⏹ STOP</button>
+                    <button id="md-loop" class="on" onclick="md_toggleLoop(md_state.index)">🔁 LOOP: ON</button>
+                </span>
+                <div class="vol">
+                    <button id="md-mute" onclick="md_toggleMute()">🔊</button>
+                    <input type="range" id="md-vol" min="0" max="1" step="0.01" value="1">
+                    <span id="md-vol-val">100%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="height: 20px;"></div>
+
+    <!-- ===== 3. Quick Panel ===== -->
+    <div class="section">
+        <h2>
+            <div class="h2-left">
+                <span>🎞️ Quick Panel</span>
+                <small>Click card to jump directly to media</small>
+            </div>
+            <div class="h2-right" style="gap: 5px; flex-wrap: wrap;">
+                <!-- Slide Direction Options + Random + Cut + Fade -->
+                <span style="font-size: 11px; color: #aaa;">Dir:</span>
+                <button type="button" class="opt-btn" id="btn-dir-cut" onclick="setSlideDir('cut')" title="Cut (Instant)">✂️</button>
+                <button type="button" class="opt-btn" id="btn-dir-fade" onclick="setSlideDir('fade')" title="Fade (Smooth)">✨</button>
+                <button type="button" class="opt-btn" id="btn-dir-up" onclick="setSlideDir('slide-up')" title="Slide Up">⬆️</button>
+                <button type="button" class="opt-btn" id="btn-dir-down" onclick="setSlideDir('slide-down')" title="Slide Down">⬇️</button>
+                <button type="button" class="opt-btn" id="btn-dir-left" onclick="setSlideDir('slide-left')" title="Slide Left">⬅️</button>
+                <button type="button" class="opt-btn" id="btn-dir-right" onclick="setSlideDir('slide-right')" title="Slide Right">➡️</button>
+                <button type="button" class="opt-btn" id="btn-dir-random" onclick="setSlideDir('random')" title="Random Direction">🔀</button>
+                
+                <span style="color: #444; margin: 0 2px;">|</span>
+
+                <!-- Background Mode Presets -->
+                <span style="font-size: 11px; color: #aaa;">BG:</span>
+                <button type="button" class="opt-btn" id="btn-bg-bg1" onclick="setBgMode('bg1')">BG 1</button>
+                <button type="button" class="opt-btn" id="btn-bg-bg2" onclick="setBgMode('bg2')">BG 2</button>
+                <button type="button" class="opt-btn" id="btn-bg-bg3" onclick="setBgMode('bg3')">BG 3</button>
+                <button type="button" class="opt-btn" id="btn-bg-transparent" onclick="setBgMode('transparent')">Transparent</button>
+            </div>
+        </h2>
+        <div class="media-grid" id="md-grid"></div>
+    </div>
+
+
+    <script src="./media-config.js"></script>
+    <script>
+    var md_bc = new BroadcastChannel(MEDIA_CHANNEL);
+    var VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
+
+    var md_state = { index: 0, visible: MEDIA_START_VISIBLE, volume: 1, muted: false };
+    var md_override = {};
+    var md_status = null;
+    var md_statusAt = 0;
+    var md_seeking = false;
+    var md_seekTimer = 0;
+
+    var autoSlideState = {
+        enabled: false,
+        intervalSec: 3,
+        timer: null
+    };
+
+    var tb_state = {
+        visible: false,
+        header: 'Breaking News',
+        body: "Welcome to today's livestream",
+        preset: 'p1',
+        hAlign: 'center',
+        edgeDist: 5,
+        bottomDist: 5,
+        showHeader: true,
+        align: 'left',
+        widthType: 'auto',
+        customWidth: 80,
+        settingsOpen: true,
+        realtime: false,
+        creditOpen: false
+    };
+
+    var slideDirection = 'slide-up'; // Default
+
+    function setSlideDir(dir) {
+        slideDirection = dir;
+        ['cut', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'random'].forEach(function(d) {
+            var btnId = d === 'random' ? 'btn-dir-random' : (d === 'cut' ? 'btn-dir-cut' : (d === 'fade' ? 'btn-dir-fade' : ('btn-dir-' + d.replace('slide-', ''))));
+            var btn = md_$(btnId);
+            if (btn) {
+                if (d === dir) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            }
+        });
+
+        md_bc.postMessage({ type: 'SLIDE_DIR_CHANGE', direction: dir });
+        md_save();
+    }
+
+    var bgMode = 'transparent'; // Default
+
+    function setBgMode(mode) {
+        bgMode = mode;
+        
+        ['bg1', 'bg2', 'bg3', 'transparent'].forEach(function(m) {
+            var btn = md_$('btn-bg-' + m);
+            if (btn) {
+                if (m === mode) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            }
+        });
+
+        md_bc.postMessage({ type: 'BG_CHANGE', mode: mode });
+        md_save();
+    }
+
+    function md_$(id) { return document.getElementById(id); }
+    function md_kind(item) { return item.type ? item.type : (VIDEO_EXT.test(item.file) ? 'video' : 'image'); }
+    function md_isVideo(i) { return md_kind(MEDIA_LIST[i]) === 'video'; }
+    function md_pad(n) { return (n < 10 ? '0' : '') + n; }
+    function md_desc(i) { return MEDIA_LIST[i].desc || MEDIA_LIST[i].file; }
+    function md_fmt(sec) {
+        sec = Math.max(0, Math.floor(sec || 0));
+        return md_pad(Math.floor(sec / 60)) + ':' + md_pad(sec % 60);
+    }
+
+    function md_loopOf(i) {
+        var it = MEDIA_LIST[i];
+        if (md_override.hasOwnProperty(it.file)) return md_override[it.file];
+        return it.loop !== false;
+    }
+    function md_loops() {
+        var arr = [];
+        for (var i = 0; i < MEDIA_LIST.length; i++) arr.push(md_loopOf(i));
+        return arr;
+    }
+
+    function md_save() {
+        try {
+            var fullData = {
+                index: md_state.index, visible: md_state.visible,
+                volume: md_state.volume, muted: md_state.muted, override: md_override,
+                tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
+                autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
+            };
+            localStorage.setItem('obs_media_config', JSON.stringify(fullData));
+        } catch (e) {}
+    }
+
+    async function io_saveToFile() {
+        var fullData = {
+            index: md_state.index, visible: md_state.visible,
+            volume: md_state.volume, muted: md_state.muted, override: md_override,
+            tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
+            autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
+        };
+        var text = JSON.stringify(fullData, null, 2);
+
+        try {
+            if (window.showSaveFilePicker) {
+                const opts = {
+                    suggestedName: 'save.json',
+                    types: [{
+                        description: 'JSON Files',
+                        accept: { 'application/json': ['.json'] },
+                    }],
+                };
+                const handle = await window.showSaveFilePicker(opts);
+                const writable = await handle.createWritable();
+                await writable.write(text);
+                await writable.close();
+                md_$('io-msg').innerText = '✓ Saved to save.json successfully!';
+                setTimeout(function() { md_$('io-msg').innerText = ''; }, 3000);
+                return;
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.log('File System API fallback to download', err);
+            } else {
+                return;
+            }
+        }
+
+        var blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'save.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        md_$('io-msg').innerText = '✓ Downloaded save.json!';
+        setTimeout(function() { md_$('io-msg').innerText = ''; }, 3000);
+    }
+
+    function toggleCreditBox() {
+        tb_state.creditOpen = !tb_state.creditOpen;
+        var box = md_$('credit-container');
+        if (tb_state.creditOpen) {
+            box.classList.add('show');
+        } else {
+            box.classList.remove('show');
+        }
+        md_save();
+    }
+
+    function toggleAutoSlide() {
+        autoSlideState.enabled = !autoSlideState.enabled;
+        renderAutoSlideUI();
+        md_save();
+        resetAutoSlideTimer();
+    }
+
+    function updateAutoInterval() {
+        var val = parseFloat(md_$('auto-interval').value);
+        if (isNaN(val) || val < 0.1) {
+            val = 0.1;
+            md_$('auto-interval').value = val;
+        }
+        autoSlideState.intervalSec = val;
+        md_save();
+        if (autoSlideState.enabled) {
+            resetAutoSlideTimer();
+        }
+    }
+
+    function resetAutoSlideTimer() {
+        if (autoSlideState.timer) {
+            clearInterval(autoSlideState.timer);
+            autoSlideState.timer = null;
+        }
+        if (autoSlideState.enabled) {
+            var ms = autoSlideState.intervalSec * 1000;
+            autoSlideState.timer = setInterval(function() {
+                md_step(1);
+            }, ms);
+        }
+    }
+
+    function renderAutoSlideUI() {
+        var btn = md_$('auto-toggle-btn');
+        if (autoSlideState.enabled) {
+            btn.className = 'auto-btn on';
+            btn.innerText = 'Auto Slide On';
+        } else {
+            btn.className = 'auto-btn off';
+            btn.innerText = 'Auto Slide Off';
+        }
+        md_$('auto-interval').value = autoSlideState.intervalSec;
+    }
+
+    function io_copyConfig() {
+        var fullData = {
+            index: md_state.index, visible: md_state.visible,
+            volume: md_state.volume, muted: md_state.muted, override: md_override,
+            tb_state: tb_state, bgMode: bgMode, slideDirection: slideDirection,
+            autoSlide: { enabled: autoSlideState.enabled, intervalSec: autoSlideState.intervalSec }
+        };
+        var text = JSON.stringify(fullData, null, 2);
+        
+        navigator.clipboard.writeText(text).then(function() {
+            md_$('io-msg').innerText = '✓ Copied to clipboard!';
+            setTimeout(function() { md_$('io-msg').innerText = ''; }, 3000);
+        }).catch(function(err) {
+            alert('Unable to copy to clipboard');
+        });
+    }
+
+    function io_handleFileSelect(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var saved = JSON.parse(e.target.result);
+                if (!saved) return;
+
+                if (typeof saved.index === 'number' && saved.index >= 0 && saved.index < MEDIA_LIST.length) md_state.index = saved.index;
+                if (typeof saved.visible === 'boolean') md_state.visible = saved.visible;
+                if (typeof saved.volume === 'number') md_state.volume = saved.volume;
+                if (typeof saved.muted === 'boolean') md_state.muted = saved.muted;
+                if (saved.override) md_override = saved.override;
+                if (saved.tb_state) tb_state = saved.tb_state;
+                if (saved.bgMode) {
+                    bgMode = saved.bgMode;
+                }
+                if (saved.slideDirection) slideDirection = saved.slideDirection;
+                if (saved.autoSlide) {
+                    autoSlideState.enabled = !!saved.autoSlide.enabled;
+                    if (typeof saved.autoSlide.intervalSec === 'number') {
+                        autoSlideState.intervalSec = Math.max(0.1, saved.autoSlide.intervalSec);
+                    }
+                }
+
+                md_save();
+                md_applyUiFromState();
+                setBgMode(bgMode);
+                setSlideDir(slideDirection);
+                md_sendSync();
+                tb_applyDraft();
+                renderAutoSlideUI();
+                resetAutoSlideTimer();
+
+                md_$('io-msg').innerText = '✓ Loaded successfully!';
+                setTimeout(function() { md_$('io-msg').innerText = ''; }, 3000);
+            } catch (err) {
+                alert('Invalid JSON file format');
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    function md_load() {
+        try {
+            var saved = JSON.parse(localStorage.getItem('obs_media_config') || 'null');
+            if (!saved) return;
+            if (typeof saved.index === 'number' && saved.index >= 0 && saved.index < MEDIA_LIST.length) md_state.index = saved.index;
+            if (typeof saved.visible === 'boolean') md_state.visible = saved.visible;
+            if (typeof saved.volume === 'number') md_state.volume = saved.volume;
+            if (typeof saved.muted === 'boolean') md_state.muted = saved.muted;
+            if (saved.override) md_override = saved.override;
+            if (saved.tb_state) tb_state = saved.tb_state;
+            if (saved.bgMode) bgMode = saved.bgMode;
+            if (saved.slideDirection) slideDirection = saved.slideDirection;
+            if (saved.autoSlide) {
+                autoSlideState.enabled = !!saved.autoSlide.enabled;
+                if (typeof saved.autoSlide.intervalSec === 'number') {
+                    autoSlideState.intervalSec = Math.max(0.1, saved.autoSlide.intervalSec);
+                }
+            }
+        } catch (e) {}
+    }
+
+    function md_applyUiFromState() {
+        md_$('tb-input-header').value = tb_state.header ? tb_state.header.replace(/<br>/g, '\n') : '';
+        md_$('tb-input-body').value = tb_state.body ? tb_state.body.replace(/<br>/g, '\n') : '';
+        md_$('tb-input-edgedist').value = tb_state.edgeDist || 5;
+        md_$('tb-input-bottomdist').value = tb_state.bottomDist || 5;
+        md_$('tb-input-widthval').value = tb_state.customWidth || 80;
+        
+        tb_setHAlign(tb_state.hAlign || 'center');
+        tb_setShowHeader(tb_state.showHeader !== false);
+        tb_setAlign(tb_state.align || 'left');
+        tb_setWidthType(tb_state.widthType || 'auto');
+        tb_setPreset(tb_state.preset || 'p1');
+        setBgMode(bgMode || 'transparent');
+        setSlideDir(slideDirection || 'slide-up');
+        tb_renderRealtimeBtn();
+        renderAutoSlideUI();
+
+        if (tb_state.creditOpen) {
+            md_$('credit-container').classList.add('show');
+        } else {
+            md_$('credit-container').classList.remove('show');
+        }
+
+        if (tb_state.settingsOpen === false) {
+            tb_state.settingsOpen = true;
+            toggleSettingsPanel();
+        }
+    }
+
+    function md_sendSync() {
+        md_bc.postMessage({
+            type: 'MEDIA_SYNC', index: md_state.index, visible: md_state.visible,
+            volume: md_state.volume, muted: md_state.muted, loops: md_loops(),
+            titleBar: tb_state, bgMode: bgMode
+        });
+    }
+
+    function md_go(i) {
+        md_state.index = i;
+        md_bc.postMessage({ type: 'MEDIA_CHANGE', index: i, loop: md_loopOf(i) });
+        md_save();
+        md_render();
+        if (autoSlideState.enabled) {
+            resetAutoSlideTimer();
+        }
+    }
+    function md_step(step) {
+        var n = MEDIA_LIST.length;
+        md_go((md_state.index + step + n) % n);
+    }
+    function md_toggleVisible() {
+        md_state.visible = !md_state.visible;
+        md_bc.postMessage({ type: 'MEDIA_VISIBLE', visible: md_state.visible });
+        md_save();
+        md_render();
+    }
+
+    function toggleSettingsPanel() {
+        tb_state.settingsOpen = !tb_state.settingsOpen;
+        var panel = md_$('settings-collapsible-panel');
+        var btn = md_$('btn-toggle-settings');
+        if (tb_state.settingsOpen) {
+            panel.classList.remove('collapsed');
+            btn.innerText = '▲ Hide Presets & Position';
+        } else {
+            panel.classList.add('collapsed');
+            btn.innerText = '▼ Show Presets & Position';
+        }
+        md_save();
+    }
+
+    function tb_setPreset(presetName) {
+        tb_state.preset = presetName;
+        var radios = document.querySelectorAll('input[name="tb-preset"]');
+        radios.forEach(function(r) {
+            var card = r.closest('.preset-card');
+            if (r.value === presetName) {
+                r.checked = true;
+                card.classList.add('selected');
+            } else {
+                r.checked = false;
+                card.classList.remove('selected');
+            }
+        });
+        tb_applyDraft();
+    }
+
+    function tb_setHAlign(hAlignVal) {
+        tb_state.hAlign = hAlignVal;
+        ['left', 'center', 'right'].forEach(function(a) {
+            var btn = md_$('btn-halign-' + a);
+            if (a === hAlignVal) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+        
+        var edgeBox = md_$('tb-box-edge');
+        if (hAlignVal === 'center') {
+            edgeBox.style.display = 'none';
+        } else {
+            edgeBox.style.display = 'block';
+            md_$('tb-label-edge').innerText = 'Distance from ' + (hAlignVal === 'left' ? 'Left' : 'Right') + ' (%):';
+        }
+        tb_applyDraft();
+    }
+
+    function tb_setShowHeader(show) {
+        tb_state.showHeader = show;
+        ['show', 'hide'].forEach(function(s) {
+            var btn = md_$('btn-head-' + s);
+            var active = (s === 'show' && show) || (s === 'hide' && !show);
+            if (active) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+        md_$('tb-header-container').style.display = show ? 'block' : 'none';
+        tb_applyDraft();
+    }
+
+    function tb_setAlign(alignVal) {
+        tb_state.align = alignVal;
+        ['left', 'center', 'right'].forEach(function(a) {
+            var btn = md_$('btn-align-' + a);
+            if (a === alignVal) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+        tb_applyDraft();
+    }
+
+    function tb_setWidthType(typeVal) {
+        tb_state.widthType = typeVal;
+        ['auto', 'percent'].forEach(function(t) {
+            var btn = md_$('btn-width-' + t);
+            if (t === typeVal) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+        md_$('tb-width-custom-box').style.display = (typeVal === 'percent') ? 'block' : 'none';
+        tb_applyDraft();
+    }
+
+    function tb_toggleRealtime() {
+        tb_state.realtime = !tb_state.realtime;
+        tb_renderRealtimeBtn();
+        md_save();
+        if (tb_state.realtime) {
+            tb_applyDraft();
+        }
+    }
+
+    function tb_renderRealtimeBtn() {
+        var btn = md_$('btn-realtime-toggle');
+        if (tb_state.realtime) {
+            btn.innerText = '⚡ Real-time: On';
+            btn.style.background = '#1b7a34';
+            btn.style.borderColor = '#2e7d32';
+        } else {
+            btn.innerText = '⚡ Real-time: Off';
+            btn.style.background = '#222';
+            btn.style.borderColor = '#444';
+        }
+    }
+
+    function tb_onBodyInput() {
+        if (tb_state.realtime) {
+            tb_applyDraft();
+        }
+    }
+
+    function tb_applyDraft() {
+        var rawHeader = md_$('tb-input-header').value;
+        var rawBody = md_$('tb-input-body').value;
+
+        tb_state.header = rawHeader.replace(/\n/g, '<br>');
+        tb_state.body = rawBody.replace(/\n/g, '<br>');
+        tb_state.edgeDist = md_$('tb-input-edgedist').value;
+        tb_state.bottomDist = md_$('tb-input-bottomdist').value;
+        tb_state.customWidth = md_$('tb-input-widthval').value;
+        
+        md_bc.postMessage({
+            type: 'TITLE_BAR_UPDATE',
+            visible: tb_state.visible,
+            header: tb_state.header,
+            body: tb_state.body,
+            preset: tb_state.preset,
+            hAlign: tb_state.hAlign,
+            edgeDist: tb_state.edgeDist,
+            bottomDist: tb_state.bottomDist,
+            showHeader: tb_state.showHeader,
+            align: tb_state.align,
+            widthType: tb_state.widthType,
+            customWidth: tb_state.customWidth
+        });
+        md_save();
+        tb_render();
+    }
+
+    function tb_toggleVisible() {
+        tb_state.visible = !tb_state.visible;
+        tb_applyDraft();
+    }
+
+    function tb_render() {
+        var btn = md_$('tb-btn-vis');
+        btn.className = 'btn-title-vis ' + (tb_state.visible ? 'on' : 'off');
+        btn.innerText = tb_state.visible ? '📺 ON AIR : ON (Visible)' : '📺 ON AIR : OFF (Hidden)';
+        
+        var cleanH = tb_state.showHeader ? '[' + tb_state.header.replace(/<br>/g, ' ') + '] ' : '';
+        var cleanB = tb_state.body.replace(/<br>/g, ' ');
+        md_$('tb-live-text').innerText = cleanH + cleanB + ' (Pos: ' + tb_state.hAlign + ', Bottom: ' + tb_state.bottomDist + '%)';
+    }
+
+    function md_videoCmd(action, time) {
+        md_bc.postMessage({ type: 'MEDIA_VIDEO', action: action, time: time });
+    }
+    function md_playPause() {
+        if (!md_isVideo(md_state.index)) return;
+        var playing = md_status && md_status.index === md_state.index && md_status.state === 'playing';
+        md_videoCmd(playing ? 'pause' : 'play');
+    }
+    function md_stop() { if (md_isVideo(md_state.index)) md_videoCmd('stop'); }
+
+    function md_toggleLoop(i) {
+        if (!md_isVideo(i)) return;
+        md_override[MEDIA_LIST[i].file] = !md_loopOf(i);
+        md_bc.postMessage({ type: 'MEDIA_LOOP', index: i, loop: md_loopOf(i) });
+        md_save();
+        md_render();
+    }
+
+    function md_sendVolume() {
+        md_bc.postMessage({ type: 'MEDIA_VOLUME', volume: md_state.volume, muted: md_state.muted });
+        md_save();
+        md_renderVolume();
+    }
+    function md_toggleMute() { md_state.muted = !md_state.muted; md_sendVolume(); }
+
+    function md_sendSeek() {
+        md_seekTimer = 0;
+        if (!md_status || !md_status.duration) return;
+        var t = (md_$('md-seek').value / 1000) * md_status.duration;
+        md_videoCmd('seek', t);
+    }
+
+    function md_renderVolume() {
+        md_$('md-vol').value = md_state.volume;
+        md_$('md-vol-val').innerText = Math.round(md_state.volume * 100) + '%';
+        var m = md_$('md-mute');
+        m.innerText = (md_state.muted || md_state.volume === 0) ? '🔇' : '🔊';
+        m.className = md_state.muted ? 'muted' : '';
+    }
+
+    function md_render() {
+        var n = MEDIA_LIST.length, i = md_state.index;
+        var isVid = md_isVideo(i);
+
+        md_$('md-now').innerText = 'On Air: #' + md_pad(i + 1) + ' — ' + md_desc(i);
+
+        var vis = md_$('md-vis');
+        vis.className = 'btn-large btn-vis ' + (md_state.visible ? 'on' : 'off');
+        vis.innerText = md_state.visible ? '👁 Show' : '🚫 Hide';
+
+        var cards = document.querySelectorAll('.media-card');
+        for (var c = 0; c < cards.length; c++) {
+            cards[c].className = 'media-card' + (c === i ? ' live' : '');
+            var chip = cards[c].querySelector('.loop-chip');
+            if (chip) {
+                var lp = md_loopOf(c);
+                chip.className = 'loop-chip ' + (lp ? 'on' : 'off');
+                chip.innerText = lp ? '🔁 Loop' : '⛔ No Loop';
+            }
+        }
+
+        md_$('md-vid-ctrl').className = 'vid-only' + (isVid ? '' : ' disabled');
+        md_$('md-vid-btns').className = 'vid-only' + (isVid ? '' : ' disabled');
+        md_$('md-vid-title').innerText = isVid ? '— ' + MEDIA_LIST[i].file : '— Current item is an image (No video controls)';
+        var lb = md_$('md-loop');
+        var lo = md_loopOf(i);
+        lb.className = lo ? 'on' : 'off';
+        lb.innerText = lo ? '🔁 LOOP: ON' : '⛔ LOOP: OFF';
+        if (!isVid) {
+            md_$('md-time').innerText = '00:00';
+            md_$('md-dur').innerText = '00:00';
+            md_$('md-seek').value = 0;
+            md_$('md-play').className = '';
+            md_$('md-play').innerText = '▶ PLAY';
+        }
+        md_renderVolume();
+        tb_render();
+    }
+
+    function md_renderStatus() {
+        var st = md_status;
+        if (!st) return;
+        var warn = '';
+        if (st.failed) warn = '⚠ Failed to load file: ' + MEDIA_LIST[md_state.index].file;
+        else if (st.blocked) warn = '⚠ Browser blocked autoplay audio';
+        md_$('md-warn').innerText = warn;
+
+        if (st.index !== md_state.index || st.kind !== 'video') return;
+
+        md_$('md-time').innerText = md_fmt(st.time);
+        md_$('md-dur').innerText = md_fmt(st.duration);
+        if (!md_seeking && st.duration > 0) md_$('md-seek').value = Math.round((st.time / st.duration) * 1000);
+
+        var pb = md_$('md-play');
+        if (st.state === 'playing') { pb.className = 'playing'; pb.innerText = '⏸ PAUSE'; }
+        else { pb.className = ''; pb.innerText = (st.state === 'ended') ? '↺ REPLAY' : '▶ PLAY'; }
+    }
+
+    function md_checkConnection() {
+        var ok = (Date.now() - md_statusAt) < 2000;
+        var b = md_$('md-conn');
+        b.className = 'badge ' + (ok ? 'on' : 'off');
+        b.innerText = ok ? '● DISPLAY CONNECTED' : '● DISPLAY DISCONNECTED';
+    }
+
+    function md_buildGrid() {
+        var grid = md_$('md-grid');
+        grid.innerHTML = '';
+        MEDIA_LIST.forEach(function (item, i) {
+            var vid = md_isVideo(i);
+            var card = document.createElement('div');
+            card.className = 'media-card';
+            card.onclick = function () { md_go(i); };
+
+            var thumb = document.createElement('div');
+            thumb.className = 'thumb';
+            var m;
+
+            if (item.thumb) {
+                m = document.createElement('img');
+                m.src = MEDIA_BASE + item.thumb;
+            } else if (vid) {
+                m = document.createElement('video');
+                m.muted = true; m.preload = 'metadata';
+                m.src = MEDIA_BASE + item.file + '#t=0.5';
+            } else {
+                m = document.createElement('img');
+                m.src = MEDIA_BASE + item.file;
+            }
+            thumb.appendChild(m);
+
+            var num = document.createElement('span');
+            num.className = 'num'; num.innerText = md_pad(i + 1);
+            thumb.appendChild(num);
+            if (vid) {
+                var k = document.createElement('span');
+                k.className = 'kind'; k.innerText = '🎬';
+                thumb.appendChild(k);
+            }
+            var tag = document.createElement('span');
+            tag.className = 'live-tag'; tag.innerText = 'LIVE';
+            thumb.appendChild(tag);
+
+            var body = document.createElement('div');
+            body.className = 'card-body';
+            var d = document.createElement('div');
+            d.className = 'desc'; d.innerText = md_desc(i);
+            body.appendChild(d);
+            if (vid) {
+                var chip = document.createElement('button');
+                chip.className = 'loop-chip on';
+                chip.onclick = function (e) { e.stopPropagation(); md_toggleLoop(i); };
+                body.appendChild(chip);
+            }
+
+            card.appendChild(thumb);
+            card.appendChild(body);
+            grid.appendChild(card);
+        });
+    }
+
+    md_load();
+    md_applyUiFromState();
+    md_buildGrid();
+    md_save();
+
+    md_render();
+    renderAutoSlideUI();
+    resetAutoSlideTimer();
+
+    var md_seek = md_$('md-seek');
+    md_seek.addEventListener('pointerdown', function () { md_seeking = true; });
+    window.addEventListener('pointerup', function () { md_seeking = false; });
+    md_seek.addEventListener('input', function () {
+        if (md_status && md_status.duration) md_$('md-time').innerText = md_fmt((md_seek.value / 1000) * md_status.duration);
+        if (!md_seekTimer) md_seekTimer = setTimeout(md_sendSeek, 80);
+    });
+    md_seek.addEventListener('change', function () { md_sendSeek(); md_seek.blur(); });
+
+    md_$('md-vol').addEventListener('input', function (e) {
+        md_state.volume = parseFloat(e.target.value);
+        if (md_state.volume > 0) md_state.muted = false;
+        md_sendVolume();
+    });
+    md_$('md-vol').addEventListener('change', function (e) { e.target.blur(); });
+
+    md_bc.onmessage = function (ev) {
+        var d = ev.data;
+        if (!d || !d.type) return;
+        if (d.type === 'MEDIA_HELLO') md_sendSync();
+        else if (d.type === 'MEDIA_STATUS') { md_status = d; md_statusAt = Date.now(); md_renderStatus(); }
+    };
+    setInterval(md_checkConnection, 1000);
+
+    document.addEventListener('click', function (e) { if (e.target.tagName === 'BUTTON') e.target.blur(); });
+    document.addEventListener('keydown', function (e) {
+        var tag = e.target.tagName;
+        if (tag === 'TEXTAREA') return;
+        if (tag === 'INPUT' && e.target.type !== 'range' && e.target.type !== 'number') return;
+
+        if (e.key === 'ArrowLeft') { e.preventDefault(); md_step(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); md_step(1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); tb_toggleVisible(); }
+        else if (e.key === ' ') { e.preventDefault(); md_playPause(); }
+        else if (e.key === 'ArrowDown') { md_toggleVisible(); }
+    });
+
+    md_sendSync();
+    </script>
+</body>
+</html>
