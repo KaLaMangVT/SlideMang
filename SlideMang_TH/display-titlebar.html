@@ -6,20 +6,26 @@
         * { box-sizing: border-box; }
         body { background: transparent; margin: 0; overflow: hidden; width: 100vw; height: 100vh; font-family: 'Prompt', 'Segoe UI', sans-serif; }
 
+        /* ตัวนอก (#ticker-pos) = กำหนดตำแหน่ง / ตัวใน (.ticker-container) = เล่นแอนิเมชัน */
+        #ticker-pos { position: absolute; }
         .ticker-container {
-            position: absolute;
+            position: relative;
+            width: 100%;
             display: flex;
             align-items: stretch;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             overflow: hidden;
-            opacity: 1;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-        }
-        .ticker-container.hidden {
             opacity: 0;
-            transform: translateY(30px);
-            pointer-events: none;
         }
+
+        /* มีรูปพื้นหลัง: ใช้รูปแทนสีพื้น (สีตัวอักษรยังเป็นของ preset) ขนาดกรอบตาม ratio ของรูป */
+        .ticker-container.has-bg {
+            background-repeat: no-repeat; background-position: center; background-size: 100% 100%;
+            border: none !important; border-radius: 0 !important; box-shadow: none !important;
+            -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+        }
+        .ticker-container.has-bg .t-head,
+        .ticker-container.has-bg .t-body { background: transparent !important; border-left: none !important; }
 
         .t-head { padding: 12px 28px; font-size: 45px; font-weight: bold; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
         .t-body { padding: 12px 32px; font-size: 45px; flex: 1; display: flex; align-items: center; line-height: 1.3; word-break: break-word; }
@@ -64,89 +70,230 @@
         .preset-p12 { border: 3px dashed #ff00ff; border-radius: 0px; }
         .preset-p12 .t-head { background: #ff00ff; color: #fff; text-transform: uppercase; }
         .preset-p12 .t-body { background: rgba(10,0,20,0.95); color: #00ffff; font-family: monospace; }
+
+        /* --- PRESETS 13-30 --- */
+        .preset-p13 .t-head { background: #c62828; color: #fff; }
+        .preset-p13 .t-body { background: rgba(255,255,255,0.96); color: #111; }
+
+        .preset-p14 { border-bottom: 5px solid #0d47a1; }
+        .preset-p14 .t-head { background: #0d47a1; color: #fff; }
+        .preset-p14 .t-body { background: rgba(255,255,255,0.96); color: #0d47a1; font-weight: 600; }
+
+        .preset-p15 { border-radius: 14px; }
+        .preset-p15 .t-head { background: #ec407a; color: #fff; }
+        .preset-p15 .t-body { background: rgba(255,240,245,0.96); color: #880e4f; }
+
+        .preset-p16 { border-radius: 22px; }
+        .preset-p16 .t-head { background: #26a69a; color: #fff; }
+        .preset-p16 .t-body { background: rgba(224,242,241,0.96); color: #004d40; }
+
+        .preset-p17 .t-head { background: linear-gradient(135deg, #ff512f, #dd2476); color: #fff; }
+        .preset-p17 .t-body { background: rgba(30,10,20,0.92); color: #ffd3e0; }
+
+        .preset-p18 .t-head { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
+        .preset-p18 .t-body { background: rgba(10,26,51,0.93); color: #d6ecff; }
+
+        .preset-p19 { border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+        .preset-p19 .t-head { background: rgba(255,255,255,0.28); color: #fff; }
+        .preset-p19 .t-body { background: rgba(255,255,255,0.14); color: #fff; }
+
+        .preset-p20 .t-head { background: #fff; color: #000; }
+        .preset-p20 .t-body { background: #000; color: #fff; }
+
+        .preset-p21 { border: 2px solid #00ff41; }
+        .preset-p21 .t-head { background: #00ff41; color: #000; font-family: monospace; }
+        .preset-p21 .t-body { background: rgba(0,0,0,0.95); color: #00ff41; font-family: monospace; }
+
+        .preset-p22 { border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
+        .preset-p22 .t-head { background: #ffeb3b; color: #000; font-weight: 900; }
+        .preset-p22 .t-body { background: #fff; color: #000; font-weight: 700; border-left: 4px solid #000; }
+
+        .preset-p23 { border-radius: 999px; }
+        .preset-p23 .t-head { background: linear-gradient(135deg, #8e24aa, #ec407a); color: #fff; padding-left: 40px; }
+        .preset-p23 .t-body { background: rgba(252,228,236,0.96); color: #6a1b9a; padding-right: 44px; }
+
+        .preset-p24 { border: 2px solid #ffd54f; }
+        .preset-p24 .t-head { background: #4a148c; color: #ffd54f; }
+        .preset-p24 .t-body { background: rgba(26,0,51,0.95); color: #fff; }
+
+        .preset-p25 .t-head { background: linear-gradient(180deg, #ff6f00, #d50000); color: #fff; }
+        .preset-p25 .t-body { background: rgba(30,0,0,0.93); color: #ffcc80; border-left: 4px solid #ff6f00; }
+
+        .preset-p26 { border-radius: 12px; }
+        .preset-p26 .t-head { background: #4fc3f7; color: #01579b; }
+        .preset-p26 .t-body { background: rgba(225,245,254,0.96); color: #01579b; }
+
+        .preset-p27 .t-head { background: #1b5e20; color: #c8e6c9; }
+        .preset-p27 .t-body { background: rgba(10,30,10,0.93); color: #c8e6c9; border-left: 4px solid #8bc34a; }
+
+        .preset-p28 { border: 2px solid #05d9e8; box-shadow: 0 0 18px rgba(5,217,232,0.7); }
+        .preset-p28 .t-head { background: #ffea00; color: #000; }
+        .preset-p28 .t-body { background: rgba(10,10,26,0.95); color: #ff2a6d; }
+
+        .preset-p29 { border-top: 4px double #000; }
+        .preset-p29 .t-head { background: #111; color: #fff; font-family: Georgia, 'Times New Roman', serif; }
+        .preset-p29 .t-body { background: rgba(245,240,225,0.97); color: #222; font-family: Georgia, 'Times New Roman', serif; }
+
+        .preset-p30 { border-bottom: 5px solid #ff4081; }
+        .preset-p30 .t-head { background: #ff4081; color: #fff; }
+        .preset-p30 .t-body { background: rgba(26,26,26,0.88); color: #fff; }
     </style>
 </head>
 <body>
-    <div class="ticker-container hidden preset-p1" id="ticker-box">
-        <div class="ticker-header t-head" id="ticker-header">ข่าวด่วน</div>
-        <div class="ticker-body t-body" id="ticker-body">ข้อความพาดหัวข่าว...</div>
+    <div id="ticker-pos">
+        <div class="ticker-container preset-p1" id="ticker-box">
+            <div class="ticker-header t-head" id="ticker-header">ข่าวด่วน</div>
+            <div class="ticker-body t-body" id="ticker-body">ข้อความพาดหัวข่าว...</div>
+        </div>
     </div>
 
     <script src="./media-config.js"></script>
     <script>
     (function () {
         var bc = new BroadcastChannel(MEDIA_CHANNEL);
-        var tickerBox = document.getElementById('ticker-box');
-        var tickerHeader = document.getElementById('ticker-header');
-        var tickerBody = document.getElementById('ticker-body');
+        var pos = document.getElementById('ticker-pos');
+        var box = document.getElementById('ticker-box');
+        var head = document.getElementById('ticker-header');
+        var body = document.getElementById('ticker-body');
 
-        function updateTitleBar(data) {
-            if (data.header !== undefined) tickerHeader.innerHTML = data.header;
-            if (data.body !== undefined) tickerBody.innerHTML = data.body;
-            
+        var DUR = 450;            // ms ของแอนิเมชัน
+        var curDir = 'fade';      // cut | fade | slide-up | slide-down | slide-left | slide-right | random
+        var lastRand = '';
+        var visible = false;
+        var swapTimer = 0;
+        var curBg = '';
+        var ratioCache = {};
+
+        // [จุดเริ่มตอนเข้า, จุดออกแบบไปต่อทิศทางเดิม]
+        var FAR = {
+            'slide-up':    ['translateY(100vh)', 'translateY(-100vh)'],
+            'slide-down':  ['translateY(-100vh)', 'translateY(100vh)'],
+            'slide-left':  ['translateX(100vw)', 'translateX(-100vw)'],
+            'slide-right': ['translateX(-100vw)', 'translateX(100vw)']
+        };
+
+        function num(v, d) { var n = parseFloat(v); return isNaN(n) ? d : n; }
+
+        function pickDir() {
+            if (curDir !== 'random') return curDir;
+            var a = ['slide-up', 'slide-down', 'slide-left', 'slide-right'].filter(function (x) { return x !== lastRand; });
+            lastRand = a[Math.floor(Math.random() * a.length)];
+            return lastRand;
+        }
+
+        function setBox(tf, op, tr) {
+            box.style.transition = tr;
+            box.style.transform = tf;
+            box.style.opacity = op;
+        }
+        var TR = function () { return 'transform ' + DUR + 'ms ease, opacity ' + DUR + 'ms ease'; };
+
+        function animIn(d) {
+            if (d === 'cut') { setBox('none', 1, 'none'); return; }
+            setBox(d === 'fade' ? 'none' : FAR[d][0], 0, 'none');
+            void box.offsetWidth;                       // บังคับให้เบราว์เซอร์จดตำแหน่งเริ่มต้นก่อน
+            setBox('none', 1, TR());
+        }
+        // cont = true: ออกต่อไปทางเดิม (ใช้ตอนสลับ Titlebar) / false: ถอยกลับทางที่เข้ามา (ใช้ตอนปิด)
+        function animOut(d, cont) {
+            if (d === 'cut') { setBox('none', 0, 'none'); return; }
+            setBox(d === 'fade' ? 'none' : FAR[d][cont ? 1 : 0], 0, TR());
+        }
+
+        function ratioOf(url, cb) {
+            if (ratioCache[url]) { cb(ratioCache[url]); return; }
+            var im = new Image();
+            im.onload = function () {
+                if (im.naturalWidth && im.naturalHeight) {
+                    ratioCache[url] = im.naturalWidth + ' / ' + im.naturalHeight;
+                    cb(ratioCache[url]);
+                }
+            };
+            im.src = url;
+        }
+
+        function render(data) {
+            if (data.header !== undefined) head.innerHTML = data.header;
+            if (data.body !== undefined) body.innerHTML = data.body;
+
             var preset = data.preset || 'p1';
-            var hAlign = data.hAlign || 'center'; // left, center, right
-            var edgeDist = data.edgeDist || '5';     // ระยะห่างขอบซ้าย/ขวา (%)
-            var bottomDist = data.bottomDist || '40'; // ระยะห่างขอบล่าง (px หรือ %)
+            var hAlign = data.hAlign || 'center';
+            var edgeDist = num(data.edgeDist, 5);
+            var bottomDist = num(data.bottomDist, 40);
             var widthType = data.widthType || 'auto';
-            var customWidth = data.customWidth || '80';
+            var customWidth = num(data.customWidth, 80);
             var showHeader = data.showHeader !== false;
+            var bg = (data.bgImage || '').trim();
 
-            // ซ่อนหรือแสดง Header
-            tickerHeader.style.display = showHeader ? 'flex' : 'none';
+            head.style.display = showHeader ? 'flex' : 'none';
 
-            // จัดการ Alignment ภายใน Body
             var textAlignment = data.align || 'left';
-            tickerBody.style.textAlign = textAlignment;
-            if (textAlignment === 'center') {
-                tickerBody.style.justifyContent = 'center';
-            } else if (textAlignment === 'right') {
-                tickerBody.style.justifyContent = 'flex-end';
+            body.style.textAlign = textAlignment;
+            body.style.justifyContent = textAlignment === 'center' ? 'center' : (textAlignment === 'right' ? 'flex-end' : 'flex-start');
+
+            // รูปพื้นหลัง: กรอบกว้างตาม canvas (หรือตาม % ที่กำหนด) สูงตาม ratio ของรูป
+            // ถ้ากว้างเกิน (ชนขอบ) จะหดด้านกว้างเข้ามาโดยรักษา ratio
+            box.className = 'ticker-container preset-' + preset + (bg ? ' has-bg' : '');
+            curBg = bg;
+            if (bg) {
+                var url = MEDIA_BASE + bg;
+                box.style.backgroundImage = 'url("' + url + '")';
+                box.style.aspectRatio = ratioCache[url] || '';
+                ratioOf(url, function (r) { if (curBg === bg) box.style.aspectRatio = r; });
             } else {
-                tickerBody.style.justifyContent = 'flex-start';
+                box.style.backgroundImage = '';
+                box.style.aspectRatio = '';
             }
 
-            // จัดการความกว้าง (Width)
+            var clamp = hAlign === 'center' ? '100vw' : 'calc(100vw - ' + edgeDist + 'vw)';
             if (widthType === 'auto') {
-                tickerBox.style.width = 'auto';
-                tickerBox.style.maxWidth = '90vw';
+                pos.style.width = bg ? '100vw' : 'auto';
+                pos.style.maxWidth = bg ? clamp : '90vw';
             } else {
-                tickerBox.style.width = customWidth + '%';
-                tickerBox.style.maxWidth = 'none';
+                pos.style.width = customWidth + '%';
+                pos.style.maxWidth = bg ? clamp : 'none';
             }
 
-            // จัดการตำแหน่งซ้าย กึ่งกลาง หรือขวา พร้อมระยะห่าง
-            tickerBox.style.left = '';
-            tickerBox.style.right = '';
-            tickerBox.style.transform = '';
+            pos.style.left = ''; pos.style.right = ''; pos.style.transform = '';
+            if (hAlign === 'left') pos.style.left = edgeDist + '%';
+            else if (hAlign === 'right') pos.style.right = edgeDist + '%';
+            else { pos.style.left = '50%'; pos.style.transform = 'translateX(-50%)'; }
+            pos.style.bottom = bottomDist + '%';
+        }
 
-            if (hAlign === 'left') {
-                tickerBox.style.left = edgeDist + '%';
-                tickerBox.style.transform = data.visible ? 'translateY(0)' : 'translateY(30px)';
-            } else if (hAlign === 'right') {
-                tickerBox.style.right = edgeDist + '%';
-                tickerBox.style.transform = data.visible ? 'translateY(0)' : 'translateY(30px)';
-            } else {
-                // กึ่งกลางหน้าจอ
-                tickerBox.style.left = '50%';
-                tickerBox.style.transform = data.visible ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(30px)';
+        function apply(data, instant) {
+            if (data.dir) curDir = data.dir;
+            var now = !!data.visible;
+            var wasSwapping = !!swapTimer;
+            clearTimeout(swapTimer); swapTimer = 0;
+
+            if (instant) {
+                render(data);
+                visible = now;
+                setBox('none', now ? 1 : 0, 'none');
+                return;
             }
 
-            // ระยะห่างขอบล่าง
-            tickerBox.style.bottom = (bottomDist !== undefined ? bottomDist : 5) + '%';
+            var d = pickDir();
+            // สลับ Titlebar ขณะกำลังแสดง: อันเก่าออก -> อันใหม่เข้า
+            if (now && visible && data.swap && d !== 'cut') {
+                animOut(d, true);
+                swapTimer = setTimeout(function () { swapTimer = 0; render(data); animIn(d); }, DUR);
+                return;
+            }
 
-            var visClass = data.visible ? '' : 'hidden';
-            tickerBox.className = 'ticker-container ' + visClass + ' preset-' + preset;
+            render(data);
+            if (now && (!visible || wasSwapping)) animIn(d);
+            else if (!now && visible) animOut(d, false);
+            visible = now;
         }
 
         bc.onmessage = function (ev) {
             var d = ev.data;
             if (!d || !d.type) return;
-            if (d.type === 'MEDIA_SYNC' && d.titleBar) {
-                updateTitleBar(d.titleBar);
-            } else if (d.type === 'TITLE_BAR_UPDATE') {
-                updateTitleBar(d);
-            }
+            if (d.type === 'MEDIA_SYNC' && d.titleBar) apply(d.titleBar, true);
+            else if (d.type === 'TITLE_BAR_UPDATE') apply(d, false);
+            else if (d.type === 'TITLE_BAR_DIR') curDir = d.dir || curDir;
         };
 
         bc.postMessage({ type: 'MEDIA_HELLO' });

@@ -1,27 +1,47 @@
 {
-  "index": 2,
-  "visible": true,
-  "volume": 1,
-  "muted": false,
-  "override": {},
-  "tb_state": {
-    "visible": true,
-    "header": "ข่าวด่วน",
-    "body": "ต้อนรับเข้าสู่รายการไลฟ์สตรีมวันนี้",
-    "preset": "p1",
-    "hAlign": "left",
-    "edgeDist": "5",
-    "bottomDist": "5",
-    "showHeader": true,
-    "align": "left",
-    "widthType": "percent",
-    "customWidth": "80",
-    "settingsOpen": true
+  "version": 5,
+  "titlebar": {
+    "onAir": false,
+    "realtime": false,
+    "applyOnSelect": true,
+    "direction": "fade"
   },
-  "bgMode": "transparent",
-  "slideDirection": "fade",
-  "autoSlide": {
-    "enabled": false,
-    "intervalSec": 3
+  "media": {
+    "show": false,
+    "autoSlide": {
+      "enabled": false,
+      "intervalSec": 3
+    }
+  },
+  "background": {
+    "show": false,
+    "index": 0,
+    "direction": "fade",
+    "background": "transparent",
+    "autoSlide": {
+      "enabled": false,
+      "intervalSec": 3
+    }
+  },
+  "video": {
+    "stopOnHide": false,
+    "bgStopOnHide": false
+  },
+  "quickPanel": {
+    "direction": "slide-up",
+    "background": "transparent"
+  },
+  "shortcuts": true,
+  "panels": {
+    "media": true,
+    "titlebar": true,
+    "background": false,
+    "presets": false,
+    "video": true,
+    "bgvideo": true,
+    "howto": false,
+    "settings": false,
+    "credit": false,
+    "livepreview": false
   }
 }

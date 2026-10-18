@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <title>Media Config Setup</title>
     <style>
-        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; max-width: 1150px; margin: 0 auto; }
-        h1 { color: #007bff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 22px; }
-        .section { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
-        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; }
-        input[type="text"], input[type="number"], select { width: 100%; height: 36px; padding: 6px 10px; background: #151515; border: 1px solid #444; color: #fff; border-radius: 4px; box-sizing: border-box; margin-bottom: 0; font-family: inherit; }
-        input[type="checkbox"] { accent-color: #007bff; transform: scale(1.2); margin-right: 6px; }
-        button { cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; padding: 10px 16px; font-weight: bold; font-family: inherit; transition: 0.1s; height: 36px; }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px; overflow: hidden; }
+
+        label { display: block; font-size: 11px; color: #aaa; margin-bottom: 4px; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; height: 30px; padding: 4px 8px; background: #151515; border: 1px solid #444; color: #fff; border-radius: 4px; margin: 0; font-family: inherit; font-size: 13px; }
+        textarea { height: 52px; resize: vertical; padding: 6px 8px; }
+        input:focus, select:focus, textarea:focus { border-color: #007bff; outline: none; }
+        input:disabled, select:disabled { opacity: 0.35; }
+        input[type="checkbox"] { accent-color: #007bff; transform: scale(1.15); margin-right: 6px; }
+        button { cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; padding: 0 12px; font-weight: bold; font-family: inherit; font-size: 13px; transition: 0.1s; height: 30px; }
         button:hover { background: #0056b3; }
         .btn-danger { background: #8b0000; }
         .btn-danger:hover { background: #b30000; }
@@ -18,135 +22,317 @@
         .btn-secondary:hover { background: #555; }
         .btn-success { background: #1b7a34; }
         .btn-success:hover { background: #2e7d32; }
-        
-        .media-item-row { 
-            background: #1f1f1f; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-bottom: 10px; 
-            display: grid; grid-template-columns: 40px 2fr 2fr 1fr 1fr 1.5fr auto auto auto; gap: 10px; align-items: center; 
+
+        .app { display: flex; height: 100vh; }
+        .side { width: 210px; flex: none; background: #202020; border-right: 1px solid #3a3a3a; display: flex; flex-direction: column; padding: 12px 10px; gap: 6px; }
+        .brand { color: #007bff; font-size: 15px; font-weight: bold; padding: 2px 4px 10px; border-bottom: 1px solid #3a3a3a; margin-bottom: 4px; }
+        .tab-btn { width: 100%; height: auto; padding: 9px 10px; text-align: left; background: transparent; color: #bbb; font-weight: normal; border-left: 3px solid transparent; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+        .tab-btn:hover { background: #2c2c2c; color: #fff; }
+        .tab-btn.active { background: #1c2b3f; color: #fff; font-weight: bold; border-left-color: #007bff; }
+        .tab-btn .count { font-size: 11px; background: #111; color: #9fb7d1; border-radius: 9px; padding: 1px 7px; font-weight: normal; }
+        .side-spacer { flex: 1; }
+        .side-actions { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #3a3a3a; padding-top: 12px; }
+        .side-actions button { height: auto; padding: 10px 8px; line-height: 1.35; }
+        .msg { color: #a5d6a7; font-size: 12px; font-weight: bold; min-height: 16px; text-align: center; }
+
+        .main { flex: 1; min-width: 0; display: flex; }
+        .pane { display: none; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+        .pane.active { display: flex; }
+        .pane-head { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid #3a3a3a; background: #1f1f1f; }
+        .pane-head h3 { margin: 0; font-size: 15px; color: #fff; }
+        .pane-head .sub { font-size: 11px; color: #888; font-weight: normal; margin-left: 6px; }
+        .pane-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 18px; }
+        .pane-body::-webkit-scrollbar { width: 9px; }
+        .pane-body::-webkit-scrollbar-track { background: #1a1a1a; }
+        .pane-body::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
+
+        .card { background: #2a2a2a; padding: 12px 14px; border-radius: 8px; margin-bottom: 14px; border: 1px solid #444; }
+        .card h4 { margin: 0 0 10px; font-size: 13px; color: #9fb7d1; }
+        .grid3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+        .grid-bg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .row-field { display: flex; flex-direction: column; min-width: 0; }
+        .file-input-group { display: flex; gap: 5px; }
+        .checkbox-label { display: flex; align-items: center; cursor: pointer; font-size: 12px; height: 30px; user-select: none; color: #ddd; margin: 0; }
+
+        .media-item-row {
+            background: #1f1f1f; border: 1px solid #444; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px;
+            display: grid; grid-template-columns: 22px 2fr 2fr 80px 1.7fr 1.5fr auto auto auto; gap: 8px; align-items: end;
             cursor: grab; transition: background 0.2s, border-color 0.2s;
         }
         .media-item-row:active { cursor: grabbing; }
         .media-item-row.dragging { opacity: 0.4; border: 2px dashed #007bff; }
-        @media (max-width: 1300px) { .media-item-row { grid-template-columns: 1fr; } }
-        
-        .row-field { display: flex; flex-direction: column; }
-        .file-input-group { display: flex; gap: 6px; }
-        .actions-bar { display: flex; gap: 10px; margin-top: 15px; align-items: center; flex-wrap: wrap; }
-        .msg { color: #a5d6a7; font-size: 13px; font-weight: bold; }
-        .checkbox-label { display: flex; align-items: center; cursor: pointer; font-size: 12px; height: 36px; user-select: none; }
-        .drag-handle { text-align: center; font-size: 18px; color: #666; cursor: grab; user-select: none; }
+        @media (max-width: 1250px) { .media-item-row { grid-template-columns: 22px 1fr 1fr; } }
+        .drag-handle { text-align: center; font-size: 17px; color: #666; cursor: grab; user-select: none; height: 30px; line-height: 30px; }
         .drag-handle:hover { color: #fff; }
+        .mini-btns { display: flex; gap: 4px; }
+        .mini-btns button { padding: 0 8px; }
+
+        .tb-row { background: #1f1f1f; border: 1px solid #444; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+        .tb-row.empty { opacity: 0.6; }
+        .tb-top { display: grid; grid-template-columns: 22px 34px 1.1fr 1.3fr 3fr auto auto; gap: 8px; align-items: end; }
+        .tb-row.dragging { opacity: 0.4; border: 2px dashed #007bff; }
+        .tb-num { height: 30px; line-height: 30px; text-align: center; font-weight: bold; color: #9fb7d1; background: #111; border-radius: 4px; font-size: 12px; }
+        .tb-opts { display: grid; grid-template-columns: 1.5fr 1.1fr 0.8fr 0.8fr 0.9fr 1.1fr 1.1fr 0.8fr 1.7fr; gap: 8px; align-items: end; padding-left: 64px; }
+        @media (max-width: 1200px) { .tb-top { grid-template-columns: 22px 34px 1fr 1fr; } .tb-opts { grid-template-columns: repeat(4, 1fr); padding-left: 0; } }
+        .design-wrap { display: flex; gap: 6px; align-items: center; }
+        .design-wrap select { flex: 1; min-width: 0; }
+        .swatch { flex: none; width: 34px; height: 30px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.25); display: flex; flex-direction: column; overflow: hidden; }
+        .swatch span { flex: 1; font-size: 8px; line-height: 15px; text-align: center; font-weight: bold; overflow: hidden; }
     </style>
 </head>
 <body>
+<div class="app">
 
-    <h1>⚙️ Media List & Config Setup Tool</h1>
+    <!-- Left Sidebar -->
+    <aside class="side">
+        <div class="brand">⚙️ Media Setup</div>
+        <button type="button" class="tab-btn active" data-tab="general" onclick="showTab('general')"><span>⚙️ General & Quick BG</span></button>
+        <button type="button" class="tab-btn" data-tab="media" onclick="showTab('media')"><span>🖼️ Media List</span><span class="count" id="cnt-media">0</span></button>
+        <button type="button" class="tab-btn" data-tab="background" onclick="showTab('background')"><span>🌌 Background List</span><span class="count" id="cnt-bg">0</span></button>
+        <button type="button" class="tab-btn" data-tab="titlebar" onclick="showTab('titlebar')"><span>📰 Titlebar Presets</span><span class="count" id="cnt-tb">0</span></button>
 
-    <div class="section">
-        <h3>Global Settings</h3>
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
-            <div>
-                <label>Media Base Path (e.g., ./media/ or URL):</label>
-                <input type="text" id="cfg-base" value="./media/">
-            </div>
-            <div>
-                <label>Channel Name:</label>
-                <input type="text" id="cfg-channel" value="obs_media_channel">
-            </div>
-            <div style="display: flex; align-items: flex-end;">
-                <label class="checkbox-label" style="height: 36px; margin-bottom: 0;">
-                    <input type="checkbox" id="cfg-visible" checked> Start Visible
-                </label>
-            </div>
+        <div class="side-spacer"></div>
+
+        <div class="side-actions">
+            <button type="button" class="btn-success" onclick="saveConfigToFile()">💾 Save Overwrite<br>media-config.js</button>
+            <input type="file" id="config-file-selector" accept=".js" style="display: none;" onchange="handleConfigLoad(event)">
+            <button type="button" class="btn-secondary" onclick="document.getElementById('config-file-selector').click()">📂 Load Old .js</button>
+            <button type="button" class="btn-danger" onclick="resetSetupConfig()">🔄 Reset Defaults</button>
+            <div id="save-msg" class="msg"></div>
         </div>
-    </div>
+    </aside>
 
-    <div class="section">
-        <h3>🎨 Background Presets (3 Images)</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-            <div class="row-field">
-                <label>Background 1 (BG 1):</label>
-                <div class="file-input-group">
-                    <input type="text" id="cfg-bg1" value="" placeholder="e.g. bg1.png">
-                    <input type="file" id="native-bg1" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg1')">
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg1').click()" style="padding: 0 10px;">📁</button>
+    <main class="main">
+
+        <!-- TAB: General & Quick BG -->
+        <section class="pane active" id="pane-general">
+            <div class="pane-head"><h3>General Settings & Quick Presets</h3></div>
+            <div class="pane-body">
+                <div class="card">
+                    <h4>Global Settings</h4>
+                    <div class="grid3" style="grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <label>Media Base Path (e.g., ./media/):</label>
+                            <input type="text" id="cfg-base" value="./media/">
+                        </div>
+                        <div>
+                            <label>Channel Name:</label>
+                            <input type="text" id="cfg-channel" value="obs_media_channel">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 20px; margin-top: 12px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cfg-visible" checked> Start 🖼️ Media Visible
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cfg-bgvisible" checked> Start 🌌 Background Visible
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>🎨 Quick Panel BG 1–3 (for Media group)</h4>
+                    <p style="font-size: 11px; color: #888; margin-top: 0; margin-bottom: 10px;">
+                        * 3 standby background images switchable directly from Media Quick Panel
+                    </p>
+                    <div class="grid-bg">
+                        <div class="row-field">
+                            <label>Media BG 1:</label>
+                            <div class="file-input-group">
+                                <input type="text" id="cfg-bg1" value="" placeholder="e.g. bg1.png">
+                                <input type="file" id="native-bg1" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg1')">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg1').click()">📁</button>
+                            </div>
+                        </div>
+                        <div class="row-field">
+                            <label>Media BG 2:</label>
+                            <div class="file-input-group">
+                                <input type="text" id="cfg-bg2" value="" placeholder="e.g. bg2.png">
+                                <input type="file" id="native-bg2" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg2')">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg2').click()">📁</button>
+                            </div>
+                        </div>
+                        <div class="row-field">
+                            <label>Media BG 3:</label>
+                            <div class="file-input-group">
+                                <input type="text" id="cfg-bg3" value="" placeholder="e.g. bg3.png">
+                                <input type="file" id="native-bg3" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg3')">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg3').click()">📁</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>🎨 Quick Panel BG 1–3 (for Background group)</h4>
+                    <p style="font-size: 11px; color: #888; margin-top: 0; margin-bottom: 10px;">
+                        * 3 standby background images switchable directly from Background Quick Panel
+                    </p>
+                    <div class="grid-bg">
+                        <div class="row-field">
+                            <label>Background BG 1:</label>
+                            <div class="file-input-group">
+                                <input type="text" id="cfg-bbg1" value="" placeholder="e.g. bbg1.png">
+                                <input type="file" id="native-bbg1" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bbg1')">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('native-bbg1').click()">📁</button>
+                            </div>
+                        </div>
+                        <div class="row-field">
+                            <label>Background BG 2:</label>
+                            <div class="file-input-group">
+                                <input type="text" id="cfg-bbg2" value="" placeholder="e.g. bbg2.png">
+                                <input type="file" id="native-bbg2" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bbg2')">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('native-bbg2').click()">📁</button>
+                            </div>
+                        </div>
+                        <div class="row-field">
+                            <label>Background BG 3:</label>
+                            <div class="file-input-group">
+                                <input type="text" id="cfg-bbg3" value="" placeholder="e.g. bbg3.png">
+                                <input type="file" id="native-bbg3" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bbg3')">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('native-bbg3').click()">📁</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="row-field">
-                <label>Background 2 (BG 2):</label>
-                <div class="file-input-group">
-                    <input type="text" id="cfg-bg2" value="" placeholder="e.g. bg2.png">
-                    <input type="file" id="native-bg2" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg2')">
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg2').click()" style="padding: 0 10px;">📁</button>
-                </div>
+        </section>
+
+        <!-- TAB: Media List -->
+        <section class="pane" id="pane-media">
+            <div class="pane-head">
+                <h3>Media List (MEDIA_LIST) <span class="sub">Drag rows or use ▲▼ buttons to reorder</span></h3>
+                <button type="button" onclick="addMediaItem()">+ Add New Item</button>
             </div>
-            <div class="row-field">
-                <label>Background 3 (BG 3):</label>
-                <div class="file-input-group">
-                    <input type="text" id="cfg-bg3" value="" placeholder="e.g. bg3.png">
-                    <input type="file" id="native-bg3" accept="image/*" style="display:none;" onchange="onBgFilePicked(this, 'cfg-bg3')">
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('native-bg3').click()" style="padding: 0 10px;">📁</button>
-                </div>
+            <div class="pane-body" id="items-container"></div>
+        </section>
+
+        <!-- TAB: Background List -->
+        <section class="pane" id="pane-background">
+            <div class="pane-head">
+                <h3>Background List (BACKGROUND_LIST) <span class="sub">Drag rows or use ▲▼ buttons to reorder</span></h3>
+                <button type="button" onclick="addBgListItem()">+ Add New Background</button>
             </div>
-        </div>
-    </div>
+            <div class="pane-body" id="bgitems-container"></div>
+        </section>
 
-    <div class="section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="margin: 0;">Media List (MEDIA_LIST) <span style="font-size:12px; color:#888; font-weight:normal;">(Drag rows or use ▲▼ buttons to reorder)</span></h3>
-            <button type="button" onclick="addItem()">+ Add New Item</button>
-        </div>
-        <div id="items-container"></div>
-    </div>
+        <!-- TAB: Titlebar Presets -->
+        <section class="pane" id="pane-titlebar">
+            <div class="pane-head">
+                <h3>Titlebar Presets <span class="sub">Add/Remove freely · Drag or use ▲▼ to reorder</span></h3>
+                <button type="button" onclick="addTbItem()">+ Add Titlebar</button>
+            </div>
+            <div class="pane-body" id="tb-container"></div>
+        </section>
 
-    <div class="actions-bar">
-        <button type="button" class="btn-success" onclick="saveConfigToFile()" style="font-size: 15px; padding: 0 24px;">💾 Save media-config.js</button>
-        
-        <input type="file" id="config-file-selector" accept=".js" style="display: none;" onchange="handleConfigLoad(event)">
-        <button type="button" class="btn-secondary" onclick="document.getElementById('config-file-selector').click()" style="font-size: 15px; padding: 0 20px;">📂 Load Existing media-config.js</button>
-
-        <span id="save-msg" class="msg"></span>
-    </div>
+    </main>
+</div>
 
     <script>
+        var TB_DESIGN_COUNT = 30;
+
+        var TB_DESIGNS = [
+            ['#e53935','#fff','#0f0f0f','#fff'], ['#0277bd','#fff','#0f0f0f','#fff'], ['#2e7d32','#fff','#0f0f0f','#fff'],
+            ['#333','#fff','#0a0a0a','#ccc'],    ['#007bff','#fff','#141414','#e0e0e0'], ['#212121','#fff','#0a0a0a','#aaa'],
+            ['#424242','#fff','#0a0a0a','#ccc'], ['#ff9800','#000','#000','#ffeb3b'],    ['#00ffcc','#000','#050f14','#00ffcc'],
+            ['#d4af37','#000','#14120a','#f3e5ab'], ['#7b1fa2','#fff','#140a1e','#e1bee7'], ['#ff00ff','#fff','#0a0014','#00ffff'],
+            ['#c62828','#fff','#ffffff','#111'], ['#0d47a1','#fff','#ffffff','#0d47a1'], ['#ec407a','#fff','#fff0f5','#880e4f'],
+            ['#26a69a','#fff','#e0f2f1','#004d40'], ['#ff512f','#fff','#1e0a14','#ffd3e0'], ['#0072ff','#fff','#0a1a33','#d6ecff'],
+            ['#8d93a8','#fff','#4a4f63','#fff'], ['#ffffff','#000','#000000','#fff'],    ['#00ff41','#000','#000000','#00ff41'],
+            ['#ffeb3b','#000','#ffffff','#000'], ['#8e24aa','#fff','#fce4ec','#6a1b9a'], ['#4a148c','#ffd54f','#1a0033','#fff'],
+            ['#e65100','#fff','#1e0000','#ffcc80'], ['#4fc3f7','#01579b','#e1f5fe','#01579b'], ['#1b5e20','#c8e6c9','#0a1e0a','#c8e6c9'],
+            ['#ffea00','#000','#0a0a1a','#ff2a6d'], ['#111111','#fff','#f5f0e1','#222'], ['#ff4081','#fff','#1a1a1a','#fff']
+        ];
+
         var defaultData = {
             base: "./media/",
             channel: "obs_media_channel",
             startVisible: true,
+            bgStartVisible: true,
             bgs: ["", "", ""],
+            bbgs: ["", "", ""],
             list: [
                 { file: "slide1.png", desc: "Promo Image 1" },
                 { file: "intro.mp4", desc: "Channel Intro Video", loop: false },
                 { file: "transparent.gif", desc: "Transparent Logo Animation" }
-            ]
+            ],
+            bgList: [
+                { file: "bg_default.mp4", desc: "Main Background Video" }
+            ],
+            titlebars: []
         };
 
+        function $(id) { return document.getElementById(id); }
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function numOr(v, d) { var n = parseFloat(v); return isNaN(n) ? d : n; }
+        function flash(text) { var m = $('save-msg'); m.innerText = text; setTimeout(function () { m.innerText = ''; }, 3000); }
+
+        function showTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === name); });
+            document.querySelectorAll('.pane').forEach(function (p) { p.classList.toggle('active', p.id === 'pane-' + name); });
+            try { localStorage.setItem('setup_media_tab', name); } catch (e) {}
+        }
+
+        function updateCounts() {
+            $('cnt-media').innerText = document.querySelectorAll('#items-container .media-item-row').length;
+            $('cnt-bg').innerText = document.querySelectorAll('#bgitems-container .media-item-row').length;
+            var filled = 0;
+            document.querySelectorAll('.tb-row').forEach(function (r) {
+                if (r.querySelector('.t-header').value.trim() || r.querySelector('.t-body').value.trim()) filled++;
+            });
+            $('cnt-tb').innerText = filled;
+        }
+
         function init() {
-            var saved = JSON.parse(localStorage.getItem('setup_media_data') || JSON.stringify(defaultData));
-            loadDataToUI(saved);
+            var saved;
+            try { saved = JSON.parse(localStorage.getItem('setup_media_data') || 'null'); } catch (e) { saved = null; }
+            loadDataToUI(saved || defaultData);
+            try { var t = localStorage.getItem('setup_media_tab'); if (t) showTab(t); } catch (e) {}
         }
 
         function loadDataToUI(data) {
-            document.getElementById('cfg-base').value = data.base || './media/';
-            document.getElementById('cfg-channel').value = data.channel || 'obs_media_channel';
-            document.getElementById('cfg-visible').checked = data.startVisible !== false;
+            $('cfg-base').value = data.base || './media/';
+            $('cfg-channel').value = data.channel || 'obs_media_channel';
+            $('cfg-visible').checked = data.startVisible !== false;
+            $('cfg-bgvisible').checked = data.bgStartVisible !== false;
 
             var bgs = data.bgs || ["", "", ""];
-            document.getElementById('cfg-bg1').value = bgs[0] || "";
-            document.getElementById('cfg-bg2').value = bgs[1] || "";
-            document.getElementById('cfg-bg3').value = bgs[2] || "";
+            $('cfg-bg1').value = bgs[0] || "";
+            $('cfg-bg2').value = bgs[1] || "";
+            $('cfg-bg3').value = bgs[2] || "";
 
-            var container = document.getElementById('items-container');
+            var bbgs = data.bbgs || ["", "", ""];
+            $('cfg-bbg1').value = bbgs[0] || "";
+            $('cfg-bbg2').value = bbgs[1] || "";
+            $('cfg-bbg3').value = bbgs[2] || "";
+
+            var container = $('items-container');
             container.innerHTML = '';
             if (Array.isArray(data.list)) {
-                data.list.forEach(function(item) {
-                    addItemDOM(item.file, item.desc || '', item.type || '', item.fit || '', item.thumb || '', item.loop !== false);
+                data.list.forEach(function (item) {
+                    addItemDOM(container, item.file, item.desc || '', item.type || '', item.fit || '', item.thumb || '', item.loop !== false);
                 });
             }
+
+            var bgContainer = $('bgitems-container');
+            bgContainer.innerHTML = '';
+            var bgListData = Array.isArray(data.bgList) ? data.bgList : [];
+            bgListData.forEach(function (item) {
+                addItemDOM(bgContainer, item.file, item.desc || '', item.type || '', item.fit || '', item.thumb || '', item.loop !== false);
+            });
+
+            var tbc = $('tb-container');
+            tbc.innerHTML = '';
+            var tbs = Array.isArray(data.titlebars) ? data.titlebars : [];
+            tbs.forEach(function (t) { if (t && (String(t.header || '').trim() || String(t.body || '').trim())) addTbRow(t); });
+            renumberTb();
+
+            updateCounts();
         }
 
         function onBgFilePicked(input, targetId) {
             if (input.files && input.files[0]) {
-                document.getElementById(targetId).value = input.files[0].name;
+                $(targetId).value = input.files[0].name;
             }
         }
 
@@ -155,19 +341,23 @@
             if (!file) return;
 
             var reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 try {
                     var code = e.target.result;
-                    var parsedData = (function() {
-                        var MEDIA_BASE, MEDIA_CHANNEL, MEDIA_START_VISIBLE, MEDIA_BGS, MEDIA_LIST;
+                    var parsedData = (function () {
+                        var MEDIA_BASE, MEDIA_CHANNEL, MEDIA_START_VISIBLE, BG_START_VISIBLE, MEDIA_BGS, BG_BGS, MEDIA_LIST, BACKGROUND_LIST, MEDIA_TITLEBARS;
                         try {
                             eval(code);
                             return {
                                 base: MEDIA_BASE,
                                 channel: MEDIA_CHANNEL,
                                 startVisible: MEDIA_START_VISIBLE,
+                                bgStartVisible: typeof BG_START_VISIBLE === 'boolean' ? BG_START_VISIBLE : true,
                                 bgs: MEDIA_BGS || ["", "", ""],
-                                list: MEDIA_LIST
+                                bbgs: BG_BGS || ["", "", ""],
+                                list: MEDIA_LIST,
+                                bgList: BACKGROUND_LIST || [],
+                                titlebars: Array.isArray(MEDIA_TITLEBARS) ? MEDIA_TITLEBARS : []
                             };
                         } catch (err) {
                             return null;
@@ -175,16 +365,13 @@
                     })();
 
                     if (!parsedData || !Array.isArray(parsedData.list)) {
-                        alert('Invalid media-config.js format or missing MEDIA_LIST');
+                        alert('Invalid media-config.js file or MEDIA_LIST not found');
                         return;
                     }
 
                     loadDataToUI(parsedData);
                     localStorage.setItem('setup_media_data', JSON.stringify(parsedData));
-
-                    var msg = document.getElementById('save-msg');
-                    msg.innerText = '✓ Loaded from media-config.js successfully!';
-                    setTimeout(function() { msg.innerText = ''; }, 3000);
+                    flash('✓ Loaded successfully!');
                 } catch (err) {
                     alert('Error reading file');
                 }
@@ -193,118 +380,102 @@
             reader.readAsText(file);
         }
 
-        function addItem() {
-            addItemDOM('', '', '', '', '', true);
+        function addMediaItem() {
+            addItemDOM($('items-container'), '', '', '', '', '', true);
+            updateCounts();
+            var c = $('items-container');
+            c.scrollTop = c.scrollHeight;
         }
 
-        function addItemDOM(file, desc, type, fit, thumb, loop) {
-            var container = document.getElementById('items-container');
+        function addBgListItem() {
+            addItemDOM($('bgitems-container'), '', '', '', '', '', true);
+            updateCounts();
+            var c = $('bgitems-container');
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function normFit(f) {
+            if (f === 'contain' || f === 'cover') return f;
+            if (f === 'none' || f === 'actual') return 'none';
+            return '';
+        }
+
+        function addItemDOM(container, file, desc, type, fit, thumb, loop) {
             var div = document.createElement('div');
             div.className = 'media-item-row';
             div.draggable = true;
-            
+            fit = normFit(fit);
+
             var fileInputId = 'native-file-' + Math.random().toString(36).substr(2, 9);
             var thumbInputId = 'native-thumb-' + Math.random().toString(36).substr(2, 9);
 
-            div.innerHTML = `
-                <div class="drag-handle" title="Drag to reorder">⠿</div>
-                <div class="row-field">
-                    <label>File Name:</label>
-                    <div class="file-input-group">
-                        <input type="text" class="inp-file" value="${file}" placeholder="e.g. image.png">
-                        <input type="file" id="${fileInputId}" style="display:none;" onchange="onFilePicked(this, 'file')">
-                        <button type="button" class="btn-secondary" onclick="document.getElementById('${fileInputId}').click()" title="Select file" style="padding: 0 10px;">📁</button>
-                    </div>
-                </div>
-                <div class="row-field">
-                    <label>Description:</label>
-                    <input type="text" class="inp-desc" value="${desc}" placeholder="Description">
-                </div>
-                <div class="row-field">
-                    <label>Type:</label>
-                    <select class="inp-type">
-                        <option value="" ${!type ? 'selected' : ''}>-- Auto --</option>
-                        <option value="image" ${type === 'image' ? 'selected' : ''}>image</option>
-                        <option value="video" ${type === 'video' ? 'selected' : ''}>video</option>
-                    </select>
-                </div>
-                <div class="row-field">
-                    <label>Fit Mode:</label>
-                    <select class="inp-fit">
-                        <option value="" ${!fit ? 'selected' : ''}>-- Default --</option>
-                        <option value="cover" ${fit === 'cover' ? 'selected' : ''}>cover</option>
-                        <option value="contain" ${fit === 'contain' ? 'selected' : ''}>contain</option>
-                    </select>
-                </div>
-                <div class="row-field">
-                    <label>Thumbnail:</label>
-                    <div class="file-input-group">
-                        <input type="text" class="inp-thumb" value="${thumb}" placeholder="e.g. thumb.jpg">
-                        <input type="file" id="${thumbInputId}" accept="image/*" style="display:none;" onchange="onFilePicked(this, 'thumb')">
-                        <button type="button" class="btn-secondary" onclick="document.getElementById('${thumbInputId}').click()" title="Select thumbnail" style="padding: 0 10px;">📁</button>
-                    </div>
-                </div>
-                <div class="row-field" style="justify-content: center;">
-                    <label class="checkbox-label">
-                        <input type="checkbox" class="inp-loop" ${loop ? 'checked' : ''}> Loop
-                    </label>
-                </div>
-                <div class="row-field" style="display:flex; flex-direction:row; gap:4px; align-items:flex-end;">
-                    <button type="button" class="btn-secondary" onclick="moveRow(this, -1)" title="Move Up" style="padding:0 8px;">▲</button>
-                    <button type="button" class="btn-secondary" onclick="moveRow(this, 1)" title="Move Down" style="padding:0 8px;">▼</button>
-                </div>
-                <div class="row-field">
-                    <button type="button" class="btn-danger" onclick="this.closest('.media-item-row').remove()" style="padding:0 10px;">Delete</button>
-                </div>
-            `;
+            div.innerHTML =
+                '<div class="drag-handle" title="Drag to reorder">⠿</div>' +
+                '<div class="row-field"><label>File:</label><div class="file-input-group">' +
+                    '<input type="text" class="inp-file" value="' + esc(file) + '" placeholder="e.g. image.png">' +
+                    '<input type="file" id="' + fileInputId + '" style="display:none;" onchange="onFilePicked(this, \'file\')">' +
+                    '<button type="button" class="btn-secondary" onclick="document.getElementById(\'' + fileInputId + '\').click()" title="Browse file">📁</button>' +
+                '</div></div>' +
+                '<div class="row-field"><label>Description:</label><input type="text" class="inp-desc" value="' + esc(desc) + '" placeholder="Description"></div>' +
+                '<div class="row-field"><label>Type:</label><select class="inp-type">' +
+                    '<option value=""' + (!type ? ' selected' : '') + '>Auto</option>' +
+                    '<option value="image"' + (type === 'image' ? ' selected' : '') + '>Image</option>' +
+                    '<option value="video"' + (type === 'video' ? ' selected' : '') + '>Video</option>' +
+                '</select></div>' +
+                '<div class="row-field"><label>Fit Mode:</label><select class="inp-fit">' +
+                    '<option value=""' + (fit === '' ? ' selected' : '') + '>Full Canvas (default)</option>' +
+                    '<option value="none"' + (fit === 'none' ? ' selected' : '') + '>Actual Size</option>' +
+                    '<option value="contain"' + (fit === 'contain' ? ' selected' : '') + '>Maintain Ratio · Fit</option>' +
+                    '<option value="cover"' + (fit === 'cover' ? ' selected' : '') + '>Maintain Ratio · Fill</option>' +
+                '</select></div>' +
+                '<div class="row-field"><label>Thumbnail:</label><div class="file-input-group">' +
+                    '<input type="text" class="inp-thumb" value="' + esc(thumb) + '" placeholder="e.g. thumb.jpg">' +
+                    '<input type="file" id="' + thumbInputId + '" accept="image/*" style="display:none;" onchange="onFilePicked(this, \'thumb\')">' +
+                    '<button type="button" class="btn-secondary" onclick="document.getElementById(\'' + thumbInputId + '\').click()" title="Browse thumbnail">📁</button>' +
+                '</div></div>' +
+                '<div class="row-field"><label class="checkbox-label"><input type="checkbox" class="inp-loop"' + (loop ? ' checked' : '') + '> Loop</label></div>' +
+                '<div class="mini-btns">' +
+                    '<button type="button" class="btn-secondary" onclick="moveRow(this, -1, \'.media-item-row\')" title="Move up">▲</button>' +
+                    '<button type="button" class="btn-secondary" onclick="moveRow(this, 1, \'.media-item-row\')" title="Move down">▼</button>' +
+                '</div>' +
+                '<div class="row-field"><button type="button" class="btn-danger" onclick="this.closest(\'.media-item-row\').remove(); updateCounts();">Delete</button></div>';
 
-            div.addEventListener('dragstart', function(e) {
+            div.addEventListener('dragstart', function (e) {
                 div.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
             });
-
-            div.addEventListener('dragend', function() {
-                div.classList.remove('dragging');
-                clearDragOverStyles();
-            });
-
-            div.addEventListener('dragover', function(e) {
+            div.addEventListener('dragend', function () { div.classList.remove('dragging'); updateCounts(); });
+            div.addEventListener('dragover', function (e) {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
                 var draggingItem = container.querySelector('.dragging');
                 if (draggingItem && draggingItem !== div) {
                     var rect = div.getBoundingClientRect();
                     var midY = rect.top + rect.height / 2;
-                    if (e.clientY < midY) {
-                        container.insertBefore(draggingItem, div);
-                    } else {
-                        container.insertBefore(draggingItem, div.nextSibling);
-                    }
+                    if (e.clientY < midY) container.insertBefore(draggingItem, div);
+                    else container.insertBefore(draggingItem, div.nextSibling);
                 }
             });
 
             container.appendChild(div);
         }
 
-        function clearDragOverStyles() {
-            var rows = document.querySelectorAll('.media-item-row');
-            rows.forEach(function(r) { r.style.borderTop = ''; r.style.borderBottom = ''; });
-        }
-
-        function moveRow(btn, direction) {
-            var row = btn.closest('.media-item-row');
+        function moveRow(btn, direction, sel) {
+            var row = btn.closest(sel);
             if (direction === -1 && row.previousElementSibling) {
                 row.parentNode.insertBefore(row, row.previousElementSibling);
             } else if (direction === 1 && row.nextElementSibling) {
                 row.parentNode.insertBefore(row.nextElementSibling, row);
             }
+            renumberTb();
+            updateCounts();
         }
 
         function onFilePicked(input, mode) {
             if (input.files && input.files[0]) {
                 var fileName = input.files[0].name;
                 var row = input.closest('.media-item-row');
-                
+
                 if (mode === 'file') {
                     var textInput = row.querySelector('.inp-file');
                     var descInput = row.querySelector('.inp-desc');
@@ -313,26 +484,109 @@
                         descInput.value = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
                     }
                 } else if (mode === 'thumb') {
-                    var thumbInput = row.querySelector('.inp-thumb');
-                    thumbInput.value = fileName;
+                    row.querySelector('.inp-thumb').value = fileName;
                 }
             }
         }
 
-        function gatherData() {
-            var base = document.getElementById('cfg-base').value;
-            var channel = document.getElementById('cfg-channel').value;
-            var startVisible = document.getElementById('cfg-visible').checked;
-            
-            var bgs = [
-                document.getElementById('cfg-bg1').value.trim(),
-                document.getElementById('cfg-bg2').value.trim(),
-                document.getElementById('cfg-bg3').value.trim()
-            ];
+        function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
-            var rows = document.querySelectorAll('.media-item-row');
+        function selOpts(pairs, cur) {
+            return pairs.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === cur ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('');
+        }
+
+        function addTbItem() {
+            addTbRow(null);
+            renumberTb();
+            updateCounts();
+            var c = $('tb-container');
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function addTbRow(s) {
+            s = s || {};
+            var preset = /^p\d+$/.test(s.preset || '') ? s.preset : 'p1';
+            var hAlign = s.hAlign || 'center';
+            var align = s.align || 'left';
+            var wtype = s.widthType === 'percent' ? 'percent' : 'auto';
+            var bgInputId = 'native-tbbg-' + Math.random().toString(36).substr(2, 9);
+
+            var designOpts = '';
+            for (var n = 1; n <= TB_DESIGN_COUNT; n++) designOpts += '<option value="p' + n + '"' + (('p' + n) === preset ? ' selected' : '') + '>Design ' + n + '</option>';
+            var posPairs = [['left', 'Left'], ['center', 'Center'], ['right', 'Right']];
+
+            var div = document.createElement('div');
+            div.className = 'tb-row';
+            div.innerHTML =
+                '<div class="tb-top">' +
+                    '<div class="drag-handle" title="Drag to reorder">⠿</div>' +
+                    '<div class="tb-num"></div>' +
+                    '<div class="row-field"><label>Name:</label><input type="text" class="t-name" value="' + esc(s.name || '') + '" placeholder="Optional"></div>' +
+                    '<div class="row-field"><label>Header:</label><input type="text" class="t-header" value="' + esc(s.header || '') + '" placeholder="e.g. Breaking News"></div>' +
+                    '<div class="row-field"><label>Body:</label><textarea class="t-body" placeholder="Text...">' + esc(s.body || '') + '</textarea></div>' +
+                    '<div class="mini-btns">' +
+                        '<button type="button" class="btn-secondary" onclick="moveRow(this, -1, \'.tb-row\')" title="Move up">▲</button>' +
+                        '<button type="button" class="btn-secondary" onclick="moveRow(this, 1, \'.tb-row\')" title="Move down">▼</button>' +
+                    '</div>' +
+                    '<div class="row-field"><button type="button" class="btn-danger" onclick="this.closest(\'.tb-row\').remove(); renumberTb(); updateCounts();">Delete</button></div>' +
+                '</div>' +
+                '<div class="tb-opts">' +
+                    '<div class="row-field"><label>Design:</label><div class="design-wrap"><select class="t-preset">' + designOpts + '</select><div class="swatch"><span class="sw-h"></span><span class="sw-b"></span></div></div></div>' +
+                    '<div class="row-field"><label>Position:</label><select class="t-halign">' + selOpts(posPairs, hAlign) + '</select></div>' +
+                    '<div class="row-field"><label>Edge Dist (%):</label><input type="number" class="t-edge" min="0" max="80" value="' + numOr(s.edgeDist, 5) + '"></div>' +
+                    '<div class="row-field"><label>Bottom Dist (%):</label><input type="number" class="t-bottom" min="0" max="90" step="0.5" value="' + numOr(s.bottomDist, 5) + '"></div>' +
+                    '<div class="row-field"><label class="checkbox-label"><input type="checkbox" class="t-showhead"' + (s.showHeader !== false ? ' checked' : '') + '> Show Header</label></div>' +
+                    '<div class="row-field"><label>Text Align:</label><select class="t-align">' + selOpts(posPairs, align) + '</select></div>' +
+                    '<div class="row-field"><label>Width Type:</label><select class="t-wtype">' + selOpts([['auto', 'Auto'], ['percent', 'Custom %']], wtype) + '</select></div>' +
+                    '<div class="row-field"><label>Width (%):</label><input type="number" class="t-wval" min="20" max="100" value="' + numOr(s.customWidth, 80) + '"></div>' +
+                    '<div class="row-field"><label>BG Image:</label><div class="file-input-group">' +
+                        '<input type="text" class="t-bgimg" value="' + esc(s.bgImage || '') + '" placeholder="e.g. bar.png">' +
+                        '<input type="file" id="' + bgInputId + '" accept="image/*" style="display:none;" onchange="if(this.files[0]) this.closest(\'.file-input-group\').querySelector(\'.t-bgimg\').value = this.files[0].name;">' +
+                        '<button type="button" class="btn-secondary" onclick="document.getElementById(\'' + bgInputId + '\').click()" title="Browse BG Image">📁</button>' +
+                    '</div></div>' +
+                '</div>';
+
+            var container = $('tb-container');
+            container.appendChild(div);
+
+            var handle = div.querySelector('.drag-handle');
+            handle.addEventListener('mousedown', function () { div.draggable = true; });
+            div.addEventListener('dragstart', function (e) { div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+            div.addEventListener('dragend', function () { div.classList.remove('dragging'); div.draggable = false; renumberTb(); });
+            div.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                var dragging = container.querySelector('.tb-row.dragging');
+                if (dragging && dragging !== div) {
+                    var rect = div.getBoundingClientRect();
+                    if (e.clientY < rect.top + rect.height / 2) container.insertBefore(dragging, div);
+                    else container.insertBefore(dragging, div.nextSibling);
+                }
+            });
+            document.addEventListener('mouseup', function () { if (!div.classList.contains('dragging')) div.draggable = false; });
+
+            var onChange = function () { refreshTbRow(div); updateCounts(); };
+            ['t-preset', 't-halign', 't-wtype'].forEach(function (c) { div.querySelector('.' + c).addEventListener('change', onChange); });
+            ['t-header', 't-body'].forEach(function (c) { div.querySelector('.' + c).addEventListener('input', onChange); });
+            refreshTbRow(div);
+        }
+
+        function refreshTbRow(div) {
+            var d = TB_DESIGNS[(parseInt(div.querySelector('.t-preset').value.replace('p', ''), 10) || 1) - 1];
+            var h = div.querySelector('.sw-h'), b = div.querySelector('.sw-b');
+            h.style.background = d[0]; h.style.color = d[1]; h.innerText = 'Aa';
+            b.style.background = d[2]; b.style.color = d[3]; b.innerText = 'Aa';
+            div.querySelector('.t-edge').disabled = div.querySelector('.t-halign').value === 'center';
+            div.querySelector('.t-wval').disabled = div.querySelector('.t-wtype').value !== 'percent';
+            div.classList.toggle('empty', !div.querySelector('.t-header').value.trim() && !div.querySelector('.t-body').value.trim());
+        }
+
+        function renumberTb() {
+            document.querySelectorAll('.tb-row').forEach(function (r, i) { r.querySelector('.tb-num').innerText = pad2(i + 1); });
+        }
+
+        function extractListItems(selector) {
             var list = [];
-            rows.forEach(function(row) {
+            document.querySelectorAll(selector + ' .media-item-row').forEach(function (row) {
                 var file = row.querySelector('.inp-file').value.trim();
                 if (!file) return;
                 var desc = row.querySelector('.inp-desc').value.trim();
@@ -349,20 +603,67 @@
                 if (!loop) item.loop = false;
                 list.push(item);
             });
+            return list;
+        }
 
-            return { base: base, channel: channel, startVisible: startVisible, bgs: bgs, list: list };
+        function gatherData() {
+            var base = $('cfg-base').value;
+            var channel = $('cfg-channel').value;
+            var startVisible = $('cfg-visible').checked;
+            var bgStartVisible = $('cfg-bgvisible').checked;
+            var bgs = [$('cfg-bg1').value.trim(), $('cfg-bg2').value.trim(), $('cfg-bg3').value.trim()];
+            var bbgs = [$('cfg-bbg1').value.trim(), $('cfg-bbg2').value.trim(), $('cfg-bbg3').value.trim()];
+
+            var list = extractListItems('#items-container');
+            var bgList = extractListItems('#bgitems-container');
+
+            var titlebars = [];
+            document.querySelectorAll('.tb-row').forEach(function (row) {
+                var header = row.querySelector('.t-header').value.trim();
+                var body = row.querySelector('.t-body').value.trim();
+                if (!header && !body) return;
+                var t = {
+                    name: row.querySelector('.t-name').value.trim(),
+                    header: header,
+                    body: body,
+                    preset: row.querySelector('.t-preset').value,
+                    hAlign: row.querySelector('.t-halign').value,
+                    edgeDist: numOr(row.querySelector('.t-edge').value, 5),
+                    bottomDist: numOr(row.querySelector('.t-bottom').value, 5),
+                    showHeader: row.querySelector('.t-showhead').checked,
+                    align: row.querySelector('.t-align').value,
+                    widthType: row.querySelector('.t-wtype').value,
+                    customWidth: numOr(row.querySelector('.t-wval').value, 80)
+                };
+                var bg = row.querySelector('.t-bgimg').value.trim();
+                if (bg) t.bgImage = bg;
+                titlebars.push(t);
+            });
+
+            return { base: base, channel: channel, startVisible: startVisible, bgStartVisible: bgStartVisible, bgs: bgs, bbgs: bbgs, list: list, bgList: bgList, titlebars: titlebars };
+        }
+
+        function resetSetupConfig() {
+            if (!confirm('Are you sure you want to reset all Setup settings to defaults? (Unsaved changes will be lost)')) return;
+            try { localStorage.removeItem('setup_media_data'); } catch (e) {}
+            loadDataToUI(defaultData);
+            flash('✓ Reset to defaults successfully!');
         }
 
         async function saveConfigToFile() {
             var data = gatherData();
             localStorage.setItem('setup_media_data', JSON.stringify(data));
 
-            var scriptContent = 
+            var scriptContent =
                 "var MEDIA_BASE = " + JSON.stringify(data.base) + ";\n" +
                 "var MEDIA_CHANNEL = " + JSON.stringify(data.channel) + ";\n" +
-                "var MEDIA_START_VISIBLE = " + data.startVisible + ";\n\n" +
-                "var MEDIA_BGS = " + JSON.stringify(data.bgs || ["", "", ""]) + ";\n\n" +
-                "var MEDIA_LIST = " + JSON.stringify(data.list, null, 4) + ";\n";
+                "var MEDIA_START_VISIBLE = " + data.startVisible + ";\n" +
+                "var BG_START_VISIBLE = " + data.bgStartVisible + ";\n\n" +
+                "var MEDIA_BGS = " + JSON.stringify(data.bgs || ["", "", ""]) + ";\n" +
+                "var BG_BGS = " + JSON.stringify(data.bbgs || ["", "", ""]) + ";\n\n" +
+                "var MEDIA_LIST = " + JSON.stringify(data.list, null, 4) + ";\n\n" +
+                "var BACKGROUND_LIST = " + JSON.stringify(data.bgList, null, 4) + ";\n\n" +
+                "var MEDIA_TITLEBARS = " + JSON.stringify(data.titlebars, null, 4) + ";\n";
 
             try {
                 if (window.showSaveFilePicker) {
@@ -377,10 +678,7 @@
                     const writable = await handle.createWritable();
                     await writable.write(scriptContent);
                     await writable.close();
-
-                    var msg = document.getElementById('save-msg');
-                    msg.innerText = '✓ Saved media-config.js successfully!';
-                    setTimeout(function() { msg.innerText = ''; }, 3000);
+                    flash('✓ Overwrote media-config.js successfully!');
                     return;
                 }
             } catch (err) {
@@ -401,9 +699,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            var msg = document.getElementById('save-msg');
-            msg.innerText = '✓ Downloaded media-config.js!';
-            setTimeout(function() { msg.innerText = ''; }, 3000);
+            flash('✓ Downloaded media-config.js successfully!');
         }
 
         init();
