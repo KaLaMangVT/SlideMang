@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { box-sizing: border-box; }
+        body { background: transparent; margin: 0; overflow: hidden; width: 100vw; height: 100vh; font-family: 'Prompt', 'Segoe UI', sans-serif; }
+
+        /* ตัวนอก (#ticker-pos) = กำหนดตำแหน่ง / ตัวใน (.ticker-container) = เล่นแอนิเมชัน */
+        #ticker-pos { position: absolute; }
+        .ticker-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: stretch;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        /* มีรูปพื้นหลัง: ใช้รูปแทนสีพื้น (สีตัวอักษรยังเป็นของ preset) ขนาดกรอบตาม ratio ของรูป */
+        .ticker-container.has-bg {
+            background-repeat: no-repeat; background-position: center; background-size: 100% 100%;
+            border: none !important; border-radius: 0 !important; box-shadow: none !important;
+            -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+        }
+        .ticker-container.has-bg .t-head,
+        .ticker-container.has-bg .t-body { background: transparent !important; border-left: none !important; }
+
+        .t-head { padding: 12px 28px; font-size: 45px; font-weight: bold; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+        .t-body { padding: 12px 32px; font-size: 45px; flex: 1; display: flex; align-items: center; line-height: 1.3; word-break: break-word; }
+
+        /* --- 12 PRESETS --- */
+        .preset-p1 .t-head { background: #e53935; color: #fff; }
+        .preset-p1 .t-body { background: rgba(15,15,15,0.9); color: #fff; border-left: 4px solid #ffb300; }
+
+        .preset-p2 .t-head { background: #0277bd; color: #fff; }
+        .preset-p2 .t-body { background: rgba(15,15,15,0.9); color: #fff; border-left: 4px solid #29b6f6; }
+
+        .preset-p3 .t-head { background: #2e7d32; color: #fff; }
+        .preset-p3 .t-body { background: rgba(15,15,15,0.9); color: #fff; border-left: 4px solid #66bb6a; }
+
+        .preset-p4 .t-head { background: #333; color: #fff; }
+        .preset-p4 .t-body { background: rgba(10,10,10,0.95); color: #ccc; border-left: 4px solid #888; }
+
+        .preset-p5 .t-head { background: #007bff; color: #fff; }
+        .preset-p5 .t-body { background: rgba(20,20,20,0.95); color: #e0e0e0; }
+
+        .preset-p6 .t-head { background: #212121; color: #fff; }
+        .preset-p6 .t-body { background: rgba(10,10,10,0.95); color: #aaa; }
+
+        .preset-p7 .t-head { background: #424242; color: #fff; }
+        .preset-p7 .t-body { background: rgba(10,10,10,0.95); color: #ccc; }
+
+        .preset-p8 { border: 2px solid #ff9800; border-radius: 10px; }
+        .preset-p8 .t-head { background: linear-gradient(135deg, #ff9800, #f57c00); color: #000; font-weight: 900; }
+        .preset-p8 .t-body { background: rgba(0,0,0,0.95); color: #ffeb3b; font-weight: bold; }
+
+        .preset-p9 { border: 1px solid #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.4); }
+        .preset-p9 .t-head { background: #00ffcc; color: #000; }
+        .preset-p9 .t-body { background: rgba(5,15,20,0.95); color: #00ffcc; }
+
+        .preset-p10 { border: 1px solid #d4af37; }
+        .preset-p10 .t-head { background: #d4af37; color: #000; }
+        .preset-p10 .t-body { background: rgba(20,18,10,0.95); color: #f3e5ab; }
+
+        .preset-p11 .t-head { background: linear-gradient(135deg, #7b1fa2, #4a148c); color: #fff; }
+        .preset-p11 .t-body { background: rgba(20,10,30,0.95); color: #e1bee7; border-left: 4px solid #ab47bc; }
+
+        .preset-p12 { border: 3px dashed #ff00ff; border-radius: 0px; }
+        .preset-p12 .t-head { background: #ff00ff; color: #fff; text-transform: uppercase; }
+        .preset-p12 .t-body { background: rgba(10,0,20,0.95); color: #00ffff; font-family: monospace; }
+
+        /* --- PRESETS 13-30 --- */
+        .preset-p13 .t-head { background: #c62828; color: #fff; }
+        .preset-p13 .t-body { background: rgba(255,255,255,0.96); color: #111; }
+
+        .preset-p14 { border-bottom: 5px solid #0d47a1; }
+        .preset-p14 .t-head { background: #0d47a1; color: #fff; }
+        .preset-p14 .t-body { background: rgba(255,255,255,0.96); color: #0d47a1; font-weight: 600; }
+
+        .preset-p15 { border-radius: 14px; }
+        .preset-p15 .t-head { background: #ec407a; color: #fff; }
+        .preset-p15 .t-body { background: rgba(255,240,245,0.96); color: #880e4f; }
+
+        .preset-p16 { border-radius: 22px; }
+        .preset-p16 .t-head { background: #26a69a; color: #fff; }
+        .preset-p16 .t-body { background: rgba(224,242,241,0.96); color: #004d40; }
+
+        .preset-p17 .t-head { background: linear-gradient(135deg, #ff512f, #dd2476); color: #fff; }
+        .preset-p17 .t-body { background: rgba(30,10,20,0.92); color: #ffd3e0; }
+
+        .preset-p18 .t-head { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
+        .preset-p18 .t-body { background: rgba(10,26,51,0.93); color: #d6ecff; }
+
+        .preset-p19 { border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+        .preset-p19 .t-head { background: rgba(255,255,255,0.28); color: #fff; }
+        .preset-p19 .t-body { background: rgba(255,255,255,0.14); color: #fff; }
+
+        .preset-p20 .t-head { background: #fff; color: #000; }
+        .preset-p20 .t-body { background: #000; color: #fff; }
+
+        .preset-p21 { border: 2px solid #00ff41; }
+        .preset-p21 .t-head { background: #00ff41; color: #000; font-family: monospace; }
+        .preset-p21 .t-body { background: rgba(0,0,0,0.95); color: #00ff41; font-family: monospace; }
+
+        .preset-p22 { border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
+        .preset-p22 .t-head { background: #ffeb3b; color: #000; font-weight: 900; }
+        .preset-p22 .t-body { background: #fff; color: #000; font-weight: 700; border-left: 4px solid #000; }
+
+        .preset-p23 { border-radius: 999px; }
+        .preset-p23 .t-head { background: linear-gradient(135deg, #8e24aa, #ec407a); color: #fff; padding-left: 40px; }
+        .preset-p23 .t-body { background: rgba(252,228,236,0.96); color: #6a1b9a; padding-right: 44px; }
+
+        .preset-p24 { border: 2px solid #ffd54f; }
+        .preset-p24 .t-head { background: #4a148c; color: #ffd54f; }
+        .preset-p24 .t-body { background: rgba(26,0,51,0.95); color: #fff; }
+
+        .preset-p25 .t-head { background: linear-gradient(180deg, #ff6f00, #d50000); color: #fff; }
+        .preset-p25 .t-body { background: rgba(30,0,0,0.93); color: #ffcc80; border-left: 4px solid #ff6f00; }
+
+        .preset-p26 { border-radius: 12px; }
+        .preset-p26 .t-head { background: #4fc3f7; color: #01579b; }
+        .preset-p26 .t-body { background: rgba(225,245,254,0.96); color: #01579b; }
+
+        .preset-p27 .t-head { background: #1b5e20; color: #c8e6c9; }
+        .preset-p27 .t-body { background: rgba(10,30,10,0.93); color: #c8e6c9; border-left: 4px solid #8bc34a; }
+
+        .preset-p28 { border: 2px solid #05d9e8; box-shadow: 0 0 18px rgba(5,217,232,0.7); }
+        .preset-p28 .t-head { background: #ffea00; color: #000; }
+        .preset-p28 .t-body { background: rgba(10,10,26,0.95); color: #ff2a6d; }
+
+        .preset-p29 { border-top: 4px double #000; }
+        .preset-p29 .t-head { background: #111; color: #fff; font-family: Georgia, 'Times New Roman', serif; }
+        .preset-p29 .t-body { background: rgba(245,240,225,0.97); color: #222; font-family: Georgia, 'Times New Roman', serif; }
+
+        .preset-p30 { border-bottom: 5px solid #ff4081; }
+        .preset-p30 .t-head { background: #ff4081; color: #fff; }
+        .preset-p30 .t-body { background: rgba(26,26,26,0.88); color: #fff; }
+    </style>
+</head>
+<body>
+    <div id="ticker-pos">
+        <div class="ticker-container preset-p1" id="ticker-box">
+            <div class="ticker-header t-head" id="ticker-header">ข่าวด่วน</div>
+            <div class="ticker-body t-body" id="ticker-body">ข้อความพาดหัวข่าว...</div>
+        </div>
+    </div>
+
+    <script src="/bus-shim.js"></script>
+    <script src="./media-config.js"></script>
+    <script>
+    (function () {
+        var bc = new BroadcastChannel(MEDIA_CHANNEL);
+        var pos = document.getElementById('ticker-pos');
+        var box = document.getElementById('ticker-box');
+        var head = document.getElementById('ticker-header');
+        var body = document.getElementById('ticker-body');
+
+        var DUR = 450;            // ms ของแอนิเมชัน
+        var curDir = 'fade';      // cut | fade | slide-up | slide-down | slide-left | slide-right | random
+        var lastRand = '';
+        var visible = false;
+        var swapTimer = 0;
+        var curBg = '';
+        var ratioCache = {};
+
+        // [จุดเริ่มตอนเข้า, จุดออกแบบไปต่อทิศทางเดิม]
+        var FAR = {
+            'slide-up':    ['translateY(100vh)', 'translateY(-100vh)'],
+            'slide-down':  ['translateY(-100vh)', 'translateY(100vh)'],
+            'slide-left':  ['translateX(100vw)', 'translateX(-100vw)'],
+            'slide-right': ['translateX(-100vw)', 'translateX(100vw)']
+        };
+
+        function num(v, d) { var n = parseFloat(v); return isNaN(n) ? d : n; }
+
+        function pickDir() {
+            if (curDir !== 'random') return curDir;
+            var a = ['slide-up', 'slide-down', 'slide-left', 'slide-right'].filter(function (x) { return x !== lastRand; });
+            lastRand = a[Math.floor(Math.random() * a.length)];
+            return lastRand;
+        }
+
+        function setBox(tf, op, tr) {
+            box.style.transition = tr;
+            box.style.transform = tf;
+            box.style.opacity = op;
+        }
+        var TR = function () { return 'transform ' + DUR + 'ms ease, opacity ' + DUR + 'ms ease'; };
+
+        function animIn(d) {
+            if (d === 'cut') { setBox('none', 1, 'none'); return; }
+            setBox(d === 'fade' ? 'none' : FAR[d][0], 0, 'none');
+            void box.offsetWidth;                       // บังคับให้เบราว์เซอร์จดตำแหน่งเริ่มต้นก่อน
+            setBox('none', 1, TR());
+        }
+        // cont = true: ออกต่อไปทางเดิม (ใช้ตอนสลับ Titlebar) / false: ถอยกลับทางที่เข้ามา (ใช้ตอนปิด)
+        function animOut(d, cont) {
+            if (d === 'cut') { setBox('none', 0, 'none'); return; }
+            setBox(d === 'fade' ? 'none' : FAR[d][cont ? 1 : 0], 0, TR());
+        }
+
+        function ratioOf(url, cb) {
+            if (ratioCache[url]) { cb(ratioCache[url]); return; }
+            var im = new Image();
+            im.onload = function () {
+                if (im.naturalWidth && im.naturalHeight) {
+                    ratioCache[url] = im.naturalWidth + ' / ' + im.naturalHeight;
+                    cb(ratioCache[url]);
+                }
+            };
+            im.src = url;
+        }
+
+        function render(data) {
+            if (data.header !== undefined) head.innerHTML = data.header;
+            if (data.body !== undefined) body.innerHTML = data.body;
+
+            var preset = data.preset || 'p1';
+            var hAlign = data.hAlign || 'center';
+            var edgeDist = num(data.edgeDist, 5);
+            var bottomDist = num(data.bottomDist, 40);
+            var widthType = data.widthType || 'auto';
+            var customWidth = num(data.customWidth, 80);
+            var showHeader = data.showHeader !== false;
+            var bg = (data.bgImage || '').trim();
+
+            head.style.display = showHeader ? 'flex' : 'none';
+
+            var textAlignment = data.align || 'left';
+            body.style.textAlign = textAlignment;
+            body.style.justifyContent = textAlignment === 'center' ? 'center' : (textAlignment === 'right' ? 'flex-end' : 'flex-start');
+
+            // รูปพื้นหลัง: กรอบกว้างตาม canvas (หรือตาม % ที่กำหนด) สูงตาม ratio ของรูป
+            // ถ้ากว้างเกิน (ชนขอบ) จะหดด้านกว้างเข้ามาโดยรักษา ratio
+            box.className = 'ticker-container preset-' + preset + (bg ? ' has-bg' : '');
+            curBg = bg;
+            if (bg) {
+                var url = MEDIA_BASE + bg;
+                box.style.backgroundImage = 'url("' + url + '")';
+                box.style.aspectRatio = ratioCache[url] || '';
+                ratioOf(url, function (r) { if (curBg === bg) box.style.aspectRatio = r; });
+            } else {
+                box.style.backgroundImage = '';
+                box.style.aspectRatio = '';
+            }
+
+            var clamp = hAlign === 'center' ? '100vw' : 'calc(100vw - ' + edgeDist + 'vw)';
+            if (widthType === 'auto') {
+                pos.style.width = bg ? '100vw' : 'auto';
+                pos.style.maxWidth = bg ? clamp : '90vw';
+            } else {
+                pos.style.width = customWidth + '%';
+                pos.style.maxWidth = bg ? clamp : 'none';
+            }
+
+            pos.style.left = ''; pos.style.right = ''; pos.style.transform = '';
+            if (hAlign === 'left') pos.style.left = edgeDist + '%';
+            else if (hAlign === 'right') pos.style.right = edgeDist + '%';
+            else { pos.style.left = '50%'; pos.style.transform = 'translateX(-50%)'; }
+            pos.style.bottom = bottomDist + '%';
+        }
+
+        function apply(data, instant) {
+            if (data.dir) curDir = data.dir;
+            var now = !!data.visible;
+            var wasSwapping = !!swapTimer;
+            clearTimeout(swapTimer); swapTimer = 0;
+
+            if (instant) {
+                render(data);
+                visible = now;
+                setBox('none', now ? 1 : 0, 'none');
+                return;
+            }
+
+            var d = pickDir();
+            // สลับ Titlebar ขณะกำลังแสดง: อันเก่าออก -> อันใหม่เข้า
+            if (now && visible && data.swap && d !== 'cut') {
+                animOut(d, true);
+                swapTimer = setTimeout(function () { swapTimer = 0; render(data); animIn(d); }, DUR);
+                return;
+            }
+
+            render(data);
+            if (now && (!visible || wasSwapping)) animIn(d);
+            else if (!now && visible) animOut(d, false);
+            visible = now;
+        }
+
+        bc.onmessage = function (ev) {
+            var d = ev.data;
+            if (!d || !d.type) return;
+            if (d.type === 'MEDIA_SYNC' && d.titleBar) apply(d.titleBar, true);
+            else if (d.type === 'TITLE_BAR_UPDATE') apply(d, false);
+            else if (d.type === 'TITLE_BAR_DIR') curDir = d.dir || curDir;
+        };
+
+        bc.postMessage({ type: 'MEDIA_HELLO' });
+    })();
+    </script>
+</body>
+</html>

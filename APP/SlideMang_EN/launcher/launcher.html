@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>SlideMang</title>
+<style>
+    :root { --bg:#17181c; --card:#22242a; --line:#33363e; --text:#e8e9ec; --dim:#9a9ea8; --acc:#4f8cff; --ok:#3ccf6e; --bad:#ff5a5a; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; height:100%; }
+    body { background:var(--bg); color:var(--text); font-family:'Segoe UI','Prompt',Tahoma,sans-serif; font-size:14px; overflow-y:auto; }
+    .wrap { padding:16px; max-width:620px; margin:0 auto; }
+    h1 { font-size:18px; margin:0 0 2px; }
+    .sub { color:var(--dim); font-size:12px; margin-bottom:14px; }
+    h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); margin:18px 0 8px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; }
+    .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#555; flex:none; }
+    .dot.on { background:var(--ok); box-shadow:0 0 6px var(--ok); }
+    .name { font-weight:600; flex:1; min-width:120px; }
+    button { background:#2e3139; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit; }
+    button:hover { background:#3a3e48; }
+    button.primary { background:var(--acc); border-color:var(--acc); color:#fff; }
+    button.primary:hover { filter:brightness(1.1); }
+    button.danger { background:#5a2a2a; border-color:#7a3a3a; }
+    button.active { background:#ff3b9a; border-color:#ff3b9a; color:#fff; }
+    button:disabled { opacity:.4; cursor:default; }
+    input[type=number], input[type=text], input[type=password] { background:#15161a; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:5px 8px; font:inherit; }
+    input[type=number] { width:78px; }
+    input[type=color] { width:36px; height:28px; padding:0; border:1px solid var(--line); border-radius:6px; background:none; }
+    label.chk { display:flex; align-items:center; gap:6px; cursor:pointer; }
+    .opts { margin-top:10px; padding-top:10px; border-top:1px solid var(--line); display:flex; gap:12px; flex-wrap:wrap; align-items:center; font-size:13px; }
+    .opts .grp { display:flex; align-items:center; gap:6px; }
+    .dim { color:var(--dim); }
+    .err { color:var(--bad); font-size:12px; margin-top:6px; }
+    .url { font-family:Consolas,monospace; font-size:12px; background:#15161a; padding:4px 8px; border-radius:6px; flex:1; min-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .hint { color:var(--dim); font-size:12px; margin-top:8px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div id="errBanner" class="err" style="display:none;white-space:pre-wrap;margin-bottom:10px"></div>
+    <h1>SlideMang</h1>
+    <div class="sub" id="ver"></div>
+
+    <h2>Control Windows</h2>
+    <div id="toolList"></div>
+
+    <h2>Display Windows (Capture in OBS)</h2>
+    <div id="displayList"></div>
+    <div class="hint">
+        Transparent mode: Window has no borders and a transparent background. Use the "Layout" button to drag/resize, or enter dimensions and click "Set Size".<br>
+        If OBS cannot capture the transparent background, disable transparent mode and use a green screen with Chroma Key, or use a Browser Source with the URL below.
+    </div>
+
+    <h2>Server / Network Control</h2>
+    <div class="card" id="serverCard"></div>
+
+    <h2>Startup</h2>
+    <div class="card"><label class="chk"><input type="checkbox" id="chkRestore"><span>Automatically reopen previously opened windows</span></label></div>
+
+    <h2>Folders</h2>
+    <div class="card row">
+        <button id="btnMedia">Open Media Folder</button>
+        <button id="btnData">Open Data Folder</button>
+    </div>
+</div>
+
+<script>
+var state = null;
+var drafts = {}; // Store input drafts to prevent overwriting when state updates
+
+function el(tag, attrs, children) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+        if (k === 'text') e.textContent = attrs[k];
+        else if (k === 'class') e.className = attrs[k];
+        else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), attrs[k]);
+        else if (k === 'checked' || k === 'disabled' || k === 'value') e[k] = attrs[k];
+        else e.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function (c) { if (c) e.appendChild(c); });
+    return e;
+}
+
+function renderWindowCard(key, w) {
+    var head = el('div', { class: 'row' }, [
+        el('span', { class: 'dot' + (w.open ? ' on' : '') }),
+        el('span', { class: 'name', text: w.title }),
+        el('button', { class: w.open ? 'danger' : 'primary', text: w.open ? 'Close' : 'Open', onclick: function () { launcher.toggle(key); } })
+    ]);
+    var card = el('div', { class: 'card' }, [head]);
+
+    if (w.kind === 'display') {
+        var wIn = el('input', { type: 'number', min: 100, max: 7680, value: drafts[key + 'w'] != null ? drafts[key + 'w'] : w.width });
+        var hIn = el('input', { type: 'number', min: 100, max: 4320, value: drafts[key + 'h'] != null ? drafts[key + 'h'] : w.height });
+        wIn.addEventListener('input', function () { drafts[key + 'w'] = wIn.value; });
+        hIn.addEventListener('input', function () { drafts[key + 'h'] = hIn.value; });
+        var apply = el('button', { text: 'Set Size', onclick: function () {
+            delete drafts[key + 'w']; delete drafts[key + 'h'];
+            launcher.update(key, { width: wIn.value, height: hIn.value });
+        } });
+        var tr = el('input', { type: 'checkbox', checked: w.transparent, onchange: function (e) { launcher.update(key, { transparent: e.target.checked }); } });
+        var color = el('input', { type: 'color', value: w.bgColor, disabled: w.transparent, onchange: function (e) { launcher.update(key, { bgColor: e.target.value }); } });
+        var lay = el('button', { class: w.layout ? 'active' : '', text: w.layout ? 'Layout: ON' : 'Layout', disabled: !w.open, onclick: function () { launcher.layout(key, !w.layout); } });
+        card.appendChild(el('div', { class: 'opts' }, [
+            el('label', { class: 'chk' }, [tr, el('span', { text: 'Transparent' })]),
+            el('div', { class: 'grp' }, [el('span', { class: 'dim', text: 'BG Color' }), color]),
+            el('div', { class: 'grp' }, [wIn, el('span', { text: '×' }), hIn, apply]),
+            lay
+        ]));
+    }
+    return card;
+}
+
+function renderServer(s) {
+    var c = document.getElementById('serverCard');
+    // Do not redraw if currently typing in a server input field (prevents losing focus/typed text)
+    if (c.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') {
+        var st = document.getElementById('srvStatus');
+        if (st) st.textContent = statusText(s);
+        return;
+    }
+    c.textContent = '';
+
+    c.appendChild(el('div', { class: 'row' }, [
+        el('span', { class: 'dot' + (s.running ? ' on' : '') }),
+        el('span', { class: 'name', id: 'srvStatus', text: statusText(s) })
+    ]));
+    if (s.error) c.appendChild(el('div', { class: 'err', text: 'Failed to start server: ' + s.error }));
+
+    var port = el('input', { type: 'number', min: 1024, max: 65535, value: s.configuredPort });
+    port.addEventListener('change', function () { launcher.server({ port: port.value }); });
+    var lan = el('input', { type: 'checkbox', checked: s.allowLan, onchange: function (e) { launcher.server({ allowLan: e.target.checked }); } });
+    var tok = el('input', { type: 'text', value: s.token, placeholder: 'Password (optional)' });
+    tok.addEventListener('change', function () { launcher.server({ token: tok.value }); });
+
+    c.appendChild(el('div', { class: 'opts' }, [
+        el('div', { class: 'grp' }, [el('span', { class: 'dim', text: 'Port' }), port]),
+        el('label', { class: 'chk' }, [lan, el('span', { text: 'Allow other devices on network' })]),
+        el('div', { class: 'grp' }, [el('span', { class: 'dim', text: 'Token' }), tok])
+    ]));
+
+    if (s.running) {
+        var pages = [['controller.html', 'Controller (Use on mobile/other devices)'], ['display-titlebar.html', 'Titlebar'], ['display-slides.html', 'Slides'], ['display-background.html', 'Background']];
+        var hosts = ['127.0.0.1'];
+        if (s.allowLan) hosts = hosts.concat(s.addresses);
+        var list = el('div', { style: 'margin-top:10px' });
+        hosts.forEach(function (h) {
+            pages.forEach(function (p) {
+                var url = 'http://' + h + ':' + s.port + '/' + p[0] + (s.token && h !== '127.0.0.1' ? '?token=' + encodeURIComponent(s.token) : '');
+                list.appendChild(el('div', { class: 'row', style: 'margin-bottom:6px' }, [
+                    el('span', { class: 'dim', style: 'width:150px;font-size:12px', text: p[1] }),
+                    el('span', { class: 'url', text: url, title: url }),
+                    el('button', { text: 'Copy', onclick: function () { launcher.copy(url); } })
+                ]));
+            });
+        });
+        c.appendChild(list);
+    }
+    c.appendChild(el('div', { class: 'hint', text: s.allowLan
+        ? 'Network access is enabled. Setting a password is recommended. Windows Firewall may prompt for permission on first run.'
+        : 'Currently accepting local connections only. Check "Allow other devices" to control from a mobile phone or another device on the same network.' }));
+}
+
+function statusText(s) {
+    return s.running ? 'Server running on port ' + s.port + '  (Connected: ' + s.clients + ')' : 'Server is not running';
+}
+
+function render(s) {
+    try { renderInner(s); document.getElementById('errBanner').style.display = 'none'; }
+    catch (e) { var b = document.getElementById('errBanner'); b.style.display = 'block'; b.textContent = 'Launcher error: ' + (e && e.stack || e); }
+}
+
+function renderInner(s) {
+    state = s;
+    document.getElementById('chkRestore').checked = !!s.server.restoreOpen;
+    document.getElementById('ver').textContent = 'Version ' + s.version;
+    var active = document.activeElement;
+    var typingInList = active && active.tagName === 'INPUT' && active.type === 'number' && document.getElementById('displayList').contains(active);
+
+    var tools = document.getElementById('toolList');
+    tools.textContent = '';
+    ['controller', 'setup'].forEach(function (k) { tools.appendChild(renderWindowCard(k, s.windows[k])); });
+
+    if (!typingInList) {
+        var disp = document.getElementById('displayList');
+        disp.textContent = '';
+        ['titlebar', 'slides', 'background'].forEach(function (k) { disp.appendChild(renderWindowCard(k, s.windows[k])); });
+    }
+    renderServer(s.server);
+}
+
+document.getElementById('chkRestore').onchange = function (e) { launcher.server({ restoreOpen: e.target.checked }); };
+document.getElementById('btnMedia').onclick = function () { launcher.openFolder('media'); };
+document.getElementById('btnData').onclick = function () { launcher.openFolder('data'); };
+
+launcher.onState(render);
+launcher.getState().then(render).catch(function (e) {
+    var b = document.getElementById('errBanner'); b.style.display = 'block';
+    b.textContent = 'Failed to load status from application: ' + (e && e.message || e);
+});
+</script>
+</body>
+</html>

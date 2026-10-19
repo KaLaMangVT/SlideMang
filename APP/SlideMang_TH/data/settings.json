@@ -1,0 +1,48 @@
+{
+  "port": 8765,
+  "allowLan": false,
+  "token": "",
+  "windows": {
+    "controller": {
+      "open": false,
+      "width": 1100,
+      "height": 842,
+      "x": 612,
+      "y": 60
+    },
+    "setup": {
+      "open": false,
+      "width": 1000,
+      "height": 820,
+      "x": 728,
+      "y": 85
+    },
+    "titlebar": {
+      "open": false,
+      "width": 1920,
+      "height": 1080,
+      "x": 1843,
+      "y": 62,
+      "transparent": true,
+      "bgColor": "#00ff00"
+    },
+    "slides": {
+      "open": false,
+      "width": 1920,
+      "height": 1080,
+      "x": 1879,
+      "y": 154,
+      "transparent": true,
+      "bgColor": "#00ff00"
+    },
+    "background": {
+      "open": false,
+      "width": 1280,
+      "height": 720,
+      "x": null,
+      "y": null,
+      "transparent": true,
+      "bgColor": "#00ff00"
+    }
+  }
+}
