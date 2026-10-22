@@ -296,7 +296,7 @@
 
     <div id="credit-container" class="credit-box">
         <div>Creator: <span>KaLaMangVT</span></div>
-        <div>Ver: <span>2.0.0</span></div>
+        <div>Ver: <span>2.0.1</span></div>
         <div>Github: <span>https://github.com/KaLaMangVT/SlideMang</span></div>
     </div>
 
@@ -1888,31 +1888,44 @@
         if (e.key === 'Enter' && e.target.tagName === 'INPUT' && (e.target.type === 'number' || e.target.type === 'text')) e.target.blur();
     });
 
-    document.addEventListener('keydown', function (e) {
-        if (!sc_enabled) return;
-        if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
+    function sc_keyName(e) {
+    var c = e.code || '';
+    if (/^Key[A-Z]$/.test(c)) return c.charAt(3);   // 'KeyQ' -> 'Q'
+    if (c === 'Space') return 'Space';
+    if (c) return '';                               // มี code แต่ไม่ใช่ปุ่มที่ใช้ -> ไม่ทำอะไร
+    // ไม่มี e.code (เช่น คีย์บอร์ดเสมือนบางชนิด) -> ถอยกลับไปใช้ e.key
+    var k = e.key || '';
+    if (k === ' ') return 'Space';
+    return k.length === 1 ? k.toUpperCase() : '';
+}
 
-        var tag = e.target.tagName, type = e.target.type;
-        if (tag === 'TEXTAREA' || tag === 'SELECT') return;
-        if (tag === 'INPUT' && type !== 'range' && type !== 'number') return;
+document.addEventListener('keydown', function (e) {
+    if (!sc_enabled) return;
+    if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
 
+    var tag = e.target.tagName, type = e.target.type;
+    if (tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (tag === 'INPUT' && type !== 'range' && type !== 'number') return;
+
+    switch (sc_keyName(e)) {
         /* Media Shortcuts */
-        if (e.key === 'q' || e.key === 'Q') { e.preventDefault(); md_step(-1); }
-        else if (e.key === 'w' || e.key === 'W') { e.preventDefault(); md_toggleVisible(); }
-        else if (e.key === 'e' || e.key === 'E') { e.preventDefault(); md_step(1); }
-        else if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); md_playPause(); }
-        
+        case 'Q':     e.preventDefault(); md_step(-1); break;
+        case 'W':     e.preventDefault(); md_toggleVisible(); break;
+        case 'E':     e.preventDefault(); md_step(1); break;
+        case 'Space': e.preventDefault(); md_playPause(); break;
+
         /* Titlebar Shortcuts */
-        else if (e.key === 'a' || e.key === 'A') { e.preventDefault(); tbp_step(-1); }
-        else if (e.key === 's' || e.key === 'S') { e.preventDefault(); tb_toggleVisible(); }
-        else if (e.key === 'd' || e.key === 'D') { e.preventDefault(); tbp_step(1); }
+        case 'A':     e.preventDefault(); tbp_step(-1); break;
+        case 'S':     e.preventDefault(); tb_toggleVisible(); break;
+        case 'D':     e.preventDefault(); tbp_step(1); break;
 
         /* Background Shortcuts (Z, X, C, V) */
-        else if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); bg_step(-1); }
-        else if (e.key === 'x' || e.key === 'X') { e.preventDefault(); bg_toggleVisible(); }
-        else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); bg_step(1); }
-        else if (e.key === 'v' || e.key === 'V') { e.preventDefault(); bg_playPause(); }
-    });
+        case 'Z':     e.preventDefault(); bg_step(-1); break;
+        case 'X':     e.preventDefault(); bg_toggleVisible(); break;
+        case 'C':     e.preventDefault(); bg_step(1); break;
+        case 'V':     e.preventDefault(); bg_playPause(); break;
+    }
+});
 
     md_sendSync();
     </script>

@@ -1,7 +1,7 @@
 {
   "name": "slidemang",
   "productName": "SlideMang",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Controller + OBS display windows with built-in network server",
   "main": "main.js",
   "scripts": {
@@ -23,12 +23,13 @@
       "web/**",
       "launcher/**",
       "defaults/**",
-      "package.json"
+      "package.json",
+      "build/icon.png"
     ],
     "win": {
       "target": [
         "portable"
-      ]
+      ], "icon": "build/icon.ico"
     },
     "portable": {
       "artifactName": "SlideMang.exe"
