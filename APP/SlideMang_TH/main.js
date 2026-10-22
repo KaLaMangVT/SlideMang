@@ -22,6 +22,7 @@ const MEDIA_DIR = path.join(ROOT, 'media');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const WEB_DIR = path.join(__dirname, 'web');
 const DEFAULTS_DIR = path.join(__dirname, 'defaults');
+const ICON_PATH = path.join(__dirname, 'build', 'icon.png');
 
 /* ---------- ให้เสียง/วิดีโอเล่นได้แม้หน้าต่างถูกบัง หรือไม่ได้คลิก ---------- */
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -140,6 +141,7 @@ function openWindow(key) {
         width: Math.max(100, st.width || def.w),
         height: Math.max(100, st.height || def.h),
         title: def.title,
+        icon: ICON_PATH,
         show: false,
         autoHideMenuBar: true,
         backgroundColor: transparent ? '#00000000' : (isDisplay ? (st.bgColor || '#00ff00') : '#1e1e1e'),
@@ -224,6 +226,7 @@ function createLauncher() {
     launcherWin = new BrowserWindow({
         width: 560, height: 780, minWidth: 480, minHeight: 520, x: 30, y: 30,
         title: 'SlideMang',
+        icon: ICON_PATH,
         backgroundColor: '#17181c',
         autoHideMenuBar: true,
         webPreferences: {
