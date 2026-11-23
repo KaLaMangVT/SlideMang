@@ -1,0 +1,54 @@
+{
+  "name": "slidemang",
+  "productName": "SlideMang",
+  "version": "3.0.0",
+  "description": "Controller + OBS display windows with built-in network server",
+  "author": "KaLaMangVT",
+  "license": "GPL-3.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/run-tests.js",
+    "dist": "electron-builder --win portable",
+    "dist:zip": "electron-builder --win zip"
+  },
+  "slidemang": {
+    "links": {
+      "github": "https://github.com/KaLaMangVT/SlideMang",
+      "donate": "https://sociabuzz.com/kalamangvt/donate",
+      "youtube": "https://www.youtube.com/@KaLaMangVT"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.kalamangvt.slidemang",
+    "productName": "SlideMang",
+    "files": [
+      "main.js",
+      "preload-window.js",
+      "preload-launcher.js",
+      "src/**",
+      "web/**",
+      "launcher/**",
+      "defaults/**",
+      "locales/**",
+      "package.json",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "SlideMang.exe"
+    }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

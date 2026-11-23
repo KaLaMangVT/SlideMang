@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SlideMang Live Worker</title>
+</head>
+<body>
+<!--
+  live-worker.html — hidden window inside the SlideMang app.
+  OBS Browser Sources and displays opened over the network can not open cameras or capture
+  this computer's screen, so they ask this page for the video instead (WebRTC):
+
+    viewer  -> RTC_WANT   { viewer, index }        "I show live slide #index"
+    worker  -> RTC_OFFER  { viewer, index, sdp }
+    viewer  -> RTC_ANSWER { viewer, sdp }
+    viewer  -> RTC_BYE    { viewer }               slide left / page closed
+    worker  -> RTC_ERROR  { viewer, index, code }
+
+  A device is opened only while at least one viewer is watching it, and closed right after.
+  With nobody watching for a while the app closes this window (RTC_WORKER_IDLE).
+-->
+<script src="/bus-shim.js"></script>
+<script src="./media-config.js"></script>
+<script src="/live-capture.js"></script>
+<script>
+(function () {
+    var bc = new BroadcastChannel(MEDIA_CHANNEL);
+    // keys are "<list>:<index>" — list is "media" (MEDIA_LIST) or "bg" (BACKGROUND_LIST)
+    var caps = {};       // key -> { stream, label, spec, viewers: {}, opening: Promise, stopTimer }
+    var peers = {};      // viewer -> { pc, key, offer }
+    var overrides = {};  // index -> changes made in the Controller (not yet saved to Setup)
+    var idleTimer = 0;
+    // bitrate by picture size (local network): 1080p 8 Mbps, 2K 16 Mbps, 4K 25 Mbps
+    function rates(h) {
+        if (h > 1440) return { max: 25000, start: 15000, min: 8000 };
+        if (h > 1080) return { max: 16000, start: 10000, min: 5000 };
+        return { max: 8000, start: 5000, min: 2500 };
+    }
+    // WebRTC normally starts low (~300 kbps, small picture) and ramps up over several seconds.
+    // On a local network we can start high, so the first frames are already full size.
+    function tuneSdp(sdp, h) {
+        var rt = rates(h || 1080), START_KBPS = rt.start, MIN_KBPS = rt.min, MAX_KBPS = rt.max;
+        var lines = sdp.split('\r\n'), out = [], videoPts = {}, inVideo = false;
+        lines.forEach(function (l) {
+            var m = /^a=rtpmap:(\d+) (VP8|VP9|H264|AV1)\//i.exec(l);
+            if (m) videoPts[m[1]] = true;
+        });
+        lines.forEach(function (l) {
+            if (/^m=/.test(l)) inVideo = /^m=video/.test(l);
+            out.push(l);
+            if (inVideo && /^c=IN/.test(l)) out.push('b=AS:' + MAX_KBPS);
+            var f = /^a=fmtp:(\d+) /.exec(l);
+            if (f && videoPts[f[1]] && l.indexOf('x-google-start-bitrate') < 0) {
+                out[out.length - 1] = l + ';x-google-start-bitrate=' + START_KBPS + ';x-google-min-bitrate=' + MIN_KBPS + ';x-google-max-bitrate=' + MAX_KBPS;
+            }
+        });
+        // codecs without an fmtp line (VP8) get one
+        Object.keys(videoPts).forEach(function (pt) {
+            if (!lines.some(function (l) { return l.indexOf('a=fmtp:' + pt + ' ') === 0; })) {
+                var at = out.indexOf(out.filter(function (l) { return l.indexOf('a=rtpmap:' + pt + ' ') === 0; })[0]);
+                if (at >= 0) out.splice(at + 1, 0, 'a=fmtp:' + pt + ' x-google-start-bitrate=' + START_KBPS + ';x-google-min-bitrate=' + MIN_KBPS + ';x-google-max-bitrate=' + MAX_KBPS);
+            }
+        });
+        return out.join('\r\n');
+    }
+
+    function send(m) { bc.postMessage(m); }
+    function keyOf(list, i) { return (list === 'bg' ? 'bg' : 'media') + ':' + i; }
+    function parse(key) { var p = key.split(':'); return { list: p[0], index: +p[1] }; }
+    function listOf(list) { return list === 'bg' ? (typeof BACKGROUND_LIST !== 'undefined' ? BACKGROUND_LIST : []) : MEDIA_LIST; }
+    function item(key) {
+        var k = parse(key);
+        var base = listOf(k.list)[k.index] || {}, ov = (k.list === 'media' && overrides[k.index]) || {}, o = {};
+        for (var k in base) o[k] = base[k];
+        for (var k2 in ov) o[k2] = ov[k2];
+        return o;
+    }
+    function status(key, state, message, label) {
+        var k = parse(key);
+        send({ type: 'LIVE_STATUS', list: k.list, index: k.index, state: state, message: message || '', label: label || '', app: true, relay: true });
+    }
+
+    function scheduleIdle() {
+        clearTimeout(idleTimer);
+        if (Object.keys(peers).length || Object.keys(caps).length) return;
+        idleTimer = setTimeout(function () { send({ type: 'RTC_WORKER_IDLE' }); }, 30000);
+    }
+
+    /* ---- devices ---- */
+    function capture(i) {   // i = key
+        var c = caps[i];
+        if (c) { clearTimeout(c.stopTimer); c.stopTimer = 0; return c.opening; }
+        var it = item(i);
+        c = caps[i] = { stream: null, label: '', spec: SMLive.spec(it), viewers: {}, stopTimer: 0 };
+        status(i, 'starting');
+        c.opening = SMLive.open(it).then(function (r) {
+            if (caps[i] !== c) { SMLive.stop(r.stream); throw new Error('STOPPED'); }
+            c.stream = r.stream; c.label = r.label;
+            var tr = r.stream.getVideoTracks()[0];
+            if (tr) tr.onended = function () { if (caps[i] === c) failCapture(i, 'ENDED'); };
+            status(i, 'live', '', r.label);
+            return c;
+        }, function (e) {
+            if (caps[i] === c) failCapture(i, e.message);
+            throw e;
+        });
+        return c.opening;
+    }
+    function failCapture(i, code) {   // i = key
+        var c = caps[i]; if (!c) return;
+        status(i, 'error', code);
+        Object.keys(c.viewers).forEach(function (v) { send({ type: 'RTC_ERROR', viewer: v, code: code }); closePeer(v, true); });
+        SMLive.stop(c.stream);
+        delete caps[i];
+        scheduleIdle();
+    }
+    function releaseSoon(i) {
+        var c = caps[i]; if (!c || c.stopTimer || Object.keys(c.viewers).length) return;
+        c.stopTimer = setTimeout(function () {
+            if (Object.keys(c.viewers).length) return;
+            SMLive.stop(c.stream);
+            if (caps[i] === c) delete caps[i];
+            status(i, 'stopped');
+            scheduleIdle();
+        }, 800);
+    }
+    /** device settings changed in the Controller: reopen and swap the track for every viewer */
+    function reopen(i) {
+        var c = caps[i]; if (!c) return;
+        var viewers = Object.keys(c.viewers);
+        SMLive.stop(c.stream);
+        delete caps[i];
+        capture(i).then(function (nc) {
+            viewers.forEach(function (v) {
+                var p = peers[v]; if (!p) return;
+                nc.viewers[v] = true;
+                var tr = nc.stream.getVideoTracks()[0];
+                p.pc.getSenders().forEach(function (s) { if (s.track && s.track.kind === 'video') s.replaceTrack(tr); });
+            });
+        }).catch(function () {});
+    }
+
+    /* ---- WebRTC ---- */
+    function srcH(c) { var tr = c && c.stream && c.stream.getVideoTracks()[0]; var s = tr ? tr.getSettings() : {}; return s.height || 1080; }
+    function iceDone(pc) {
+        if (pc.iceGatheringState === 'complete') return Promise.resolve();
+        return new Promise(function (res) {
+            var t = setTimeout(res, 2500);
+            pc.addEventListener('icegatheringstatechange', function () { if (pc.iceGatheringState === 'complete') { clearTimeout(t); res(); } });
+        });
+    }
+    function closePeer(v, quiet) {
+        var p = peers[v]; if (!p) return;
+        delete peers[v];
+        try { p.pc.close(); } catch (e) {}
+        var c = caps[p.key];
+        if (c) { delete c.viewers[v]; releaseSoon(p.key); }
+        scheduleIdle();
+    }
+    function onWant(d) {
+        var v = String(d.viewer || ''), i = keyOf(d.list, d.index);
+        if (!v || !SMLive.isLive(listOf(d.list)[d.index])) return;
+        clearTimeout(idleTimer);
+        var p = peers[v];
+        if (p && p.key === i) { if (p.offer) send(p.offer); return; }   // viewer did not get the offer yet
+        if (p) closePeer(v, true);
+        p = peers[v] = { pc: null, key: i, offer: null };
+        capture(i).then(function (c) {
+            if (peers[v] !== p) return;
+            c.viewers[v] = true;
+            var pc = p.pc = new RTCPeerConnection({ iceServers: [] });
+            c.stream.getTracks().forEach(function (t) {
+                // keep the full resolution; under pressure drop frames instead of shrinking the picture
+                try { t.contentHint = item(i).type === 'capture' ? 'detail' : 'motion'; } catch (e) {}
+                pc.addTrack(t, c.stream);
+            });
+            pc.onconnectionstatechange = function () {
+                var s = pc.connectionState;
+                if (s === 'failed' || s === 'closed') closePeer(v);
+                else if (s === 'disconnected') setTimeout(function () { if (pc.connectionState === 'disconnected') closePeer(v); }, 5000);
+            };
+            pc.getSenders().forEach(function (s) {
+                try {
+                    var prm = s.getParameters();
+                    if (!prm.encodings || !prm.encodings.length) prm.encodings = [{}];
+                    prm.encodings[0].maxBitrate = rates(srcH(c)).max * 1000;
+                    prm.encodings[0].scaleResolutionDownBy = 1;
+                    prm.degradationPreference = 'maintain-resolution';
+                    s.setParameters(prm).catch(function () {});
+                } catch (e) {}
+            });
+            p.h = srcH(c);
+            return pc.createOffer().then(function (o) { return pc.setLocalDescription({ type: 'offer', sdp: tuneSdp(o.sdp, p.h) }); })
+                .then(function () { return iceDone(pc); })
+                .then(function () {
+                    if (peers[v] !== p) return;
+                    var st = (c.stream.getVideoTracks()[0] || { getSettings: function () { return {}; } }).getSettings();
+                    // the original size goes with the offer, so the viewer lays the picture out at full size from the first frame
+                    p.offer = { type: 'RTC_OFFER', viewer: v, sdp: pc.localDescription.sdp, label: c.label, width: st.width || 0, height: st.height || 0 };
+                    send(p.offer);
+                });
+        }).catch(function (e) {
+            if (peers[v] === p) { send({ type: 'RTC_ERROR', viewer: v, code: (e && e.message) || 'ERROR' }); delete peers[v]; }
+            scheduleIdle();
+        });
+    }
+
+    bc.onmessage = function (ev) {
+        var d = ev.data;
+        if (!d || !d.type) return;
+        if (d.type === 'RTC_WANT') onWant(d);
+        else if (d.type === 'RTC_ANSWER') { var p = peers[d.viewer]; if (p && p.pc) p.pc.setRemoteDescription({ type: 'answer', sdp: tuneSdp(d.sdp, p.h) }).catch(function () { closePeer(d.viewer); }); }
+        else if (d.type === 'RTC_BYE') closePeer(d.viewer);
+        else if (d.type === 'LIVE_RESTART') { var rk = keyOf(d.list, d.index); if (caps[rk]) reopen(rk); }
+        else if (d.type === 'LIVE_OVERRIDE' && (d.list || 'media') === 'media') {
+            var ok = keyOf('media', d.index), before = SMLive.spec(item(ok));
+            if (d.patch) overrides[d.index] = d.patch; else delete overrides[d.index];
+            if (caps[ok] && SMLive.spec(item(ok)) !== before) reopen(ok);
+        }
+        else if (d.type === 'SESSION_PUSH' && d.session && d.session.extra && d.session.extra.liveOverrides) {
+            overrides = d.session.extra.liveOverrides;
+        }
+    };
+
+    // start from the current Controller overrides, then tell viewers we are here
+    fetch('/api/session').then(function (r) { return r.json(); }).then(function (j) {
+        var ex = j && j.session && j.session.extra;
+        if (ex && ex.liveOverrides) overrides = ex.liveOverrides;
+    }).catch(function () {}).then(function () { send({ type: 'RTC_WORKER_READY' }); scheduleIdle(); });
+    window.__smWorker = { caps: caps, peers: peers };   // for debugging (F12 is not available in a hidden window)
+    window.addEventListener('beforeunload', function () {
+        Object.keys(peers).forEach(function (v) { closePeer(v, true); });
+        Object.keys(caps).forEach(function (i) { SMLive.stop(caps[i].stream); });
+    });
+})();
+</script>
+</body>
+</html>

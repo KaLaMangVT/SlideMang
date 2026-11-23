@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Media Config Setup</title>
+    <script src="/i18n.js"></script>
+    <script src="/bus-shim.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px; overflow: hidden; }
+
+        label { display: block; font-size: 11px; color: #aaa; margin-bottom: 4px; }
+        input[type="text"], input[type="number"], input[type="password"], select, textarea { width: 100%; height: 30px; padding: 4px 8px; background: #151515; border: 1px solid #444; color: #fff; border-radius: 4px; margin: 0; font-family: inherit; font-size: 13px; }
+        textarea { height: 52px; resize: vertical; padding: 6px 8px; }
+        input:focus, select:focus, textarea:focus { border-color: #007bff; outline: none; }
+        input[type="password"]::placeholder { color: #777; }
+        input:disabled, select:disabled { opacity: 0.35; }
+        input[type="checkbox"] { accent-color: #007bff; transform: scale(1.15); margin-right: 6px; }
+        button { cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; padding: 0 12px; font-weight: bold; font-family: inherit; font-size: 13px; transition: 0.1s; height: 30px; white-space: nowrap; }
+        button:hover { background: #0056b3; }
+        button:disabled { opacity: .45; cursor: default; }
+        .btn-danger { background: #8b0000; }
+        .btn-danger:hover { background: #b30000; }
+        .btn-secondary { background: #444; }
+        .btn-secondary:hover { background: #555; }
+        .btn-success { background: #1b7a34; }
+        .btn-success:hover { background: #2e7d32; }
+
+        .app { display: flex; height: 100vh; }
+        .side { width: 196px; flex: none; background: #202020; border-right: 1px solid #3a3a3a; display: flex; flex-direction: column; padding: 12px 10px; gap: 6px; overflow-y: auto; }
+        .brand { color: #007bff; font-size: 15px; font-weight: bold; padding: 2px 4px 10px; border-bottom: 1px solid #3a3a3a; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+        .brand select { width: auto; height: 24px; padding: 0 4px; font-size: 12px; }
+        .tabs { display: flex; flex-direction: column; gap: 6px; }
+        .tab-btn { width: 100%; height: auto; padding: 9px 10px; text-align: left; background: transparent; color: #bbb; font-weight: normal; border-left: 3px solid transparent; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+        .tab-btn:hover { background: #2c2c2c; color: #fff; }
+        .tab-btn.active { background: #1c2b3f; color: #fff; font-weight: bold; border-left-color: #007bff; }
+        .tab-btn .count { font-size: 11px; background: #111; color: #9fb7d1; border-radius: 9px; padding: 1px 7px; font-weight: normal; }
+        .side-spacer { flex: 1; }
+        .side-actions { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #3a3a3a; padding-top: 12px; }
+        .side-actions button { height: auto; padding: 10px 8px; line-height: 1.35; white-space: normal; }
+        .msg { color: #a5d6a7; font-size: 12px; font-weight: bold; min-height: 16px; text-align: center; }
+        .msg.err { color: #ff8a80; }
+        .dirty { display: none; color: #ffb74d; font-size: 12px; font-weight: bold; text-align: center; }
+        body.is-dirty .dirty { display: block; }
+        body.is-dirty #btn-save { box-shadow: 0 0 0 2px #ffb74d; }
+
+        .main { flex: 1; min-width: 0; display: flex; }
+        .pane { display: none; flex-direction: column; flex: 1; min-width: 0; min-height: 0; position: relative; }
+        .pane.active { display: flex; }
+        .pane-head { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; padding: 10px 18px; border-bottom: 1px solid #3a3a3a; background: #1f1f1f; flex-wrap: wrap; }
+        .pane-head h3 { margin: 0; font-size: 15px; color: #fff; }
+        .pane-head .sub { font-size: 11px; color: #888; font-weight: normal; margin-left: 6px; }
+        .head-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .toolbar { flex: none; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 18px; background: #1c1c1c; border-bottom: 1px solid #333; font-size: 12px; color: #aaa; }
+        .toolbar select { width: auto; min-width: 140px; max-width: 260px; height: 28px; }
+        .toolbar button { height: 28px; padding: 0 10px; font-size: 12px; }
+        .toolbar .hint { color: #777; }
+        .pane-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 18px; }
+        .pane-body::-webkit-scrollbar { width: 9px; }
+        .pane-body::-webkit-scrollbar-track { background: #1a1a1a; }
+        .pane-body::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
+        .empty-note { color: #777; text-align: center; padding: 40px 10px; border: 2px dashed #333; border-radius: 10px; font-size: 14px; line-height: 1.6; }
+
+        /* drop overlay */
+        .drop-overlay { display: none; position: absolute; inset: 8px; border: 3px dashed #4da3ff; border-radius: 12px; background: rgba(0, 60, 130, 0.55); z-index: 50; align-items: center; justify-content: center; text-align: center; font-size: 18px; font-weight: bold; color: #fff; pointer-events: none; padding: 20px; line-height: 1.5; }
+        .pane.drop-on .drop-overlay { display: flex; }
+        .busy { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200; display: none; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; }
+        body.is-busy .busy { display: flex; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 300; display: none; align-items: center; justify-content: center; padding: 16px; }
+        .modal.on { display: flex; }
+        .modal-box { background: #262626; border: 1px solid #555; border-radius: 8px; padding: 16px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+        .modal-box .m-title { font-weight: bold; color: #9fb7d1; }
+        .modal-box .m-btns { display: flex; gap: 8px; justify-content: flex-end; }
+
+        .card { background: #2a2a2a; padding: 12px 14px; border-radius: 8px; margin-bottom: 14px; border: 1px solid #444; }
+        .card h4 { margin: 0 0 10px; font-size: 13px; color: #9fb7d1; }
+        .card p.note { font-size: 11px; color: #888; margin: 0 0 10px; }
+        .grid-bg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .row-field { display: flex; flex-direction: column; min-width: 0; }
+        .file-input-group { display: flex; gap: 5px; }
+        .file-input-group input { min-width: 0; }
+        .file-input-group button { flex: none; padding: 0 9px; }
+        .checkbox-label { display: flex; align-items: center; cursor: pointer; font-size: 12px; min-height: 30px; user-select: none; color: #ddd; margin: 0; }
+        .checks { display: flex; gap: 8px 20px; flex-wrap: wrap; }
+        details.adv summary { cursor: pointer; color: #9fb7d1; font-size: 12px; margin: 4px 0; }
+        details.adv .adv-body { display: grid; grid-template-columns: minmax(0, 320px); gap: 8px; padding: 8px 0 2px; }
+
+        .obs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px 12px; align-items: end; }
+        .obs-state { font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 6px; background: #151515; border: 1px solid #333; }
+        .obs-state.ok { color: #a5d6a7; border-color: #2e7d32; }
+        .obs-state.bad { color: #ff8a80; border-color: #8b0000; }
+        .help { font-size: 11px; color: #888; line-height: 1.6; margin-top: 8px; }
+        .help b { color: #bbb; }
+        input.missing { border-color: #e65100; background: #2a1808; }
+        .miss-note { display: none; font-size: 11px; color: #ffab40; margin-top: 3px; }
+        .row-field.has-missing .miss-note { display: block; }
+
+        .media-item-row {
+            background: #1f1f1f; border: 1px solid #444; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px;
+            display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: center;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .row-fields { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-end; min-width: 0; }
+        .row-fields > .row-field { flex: 1.4 1 160px; }
+        .row-fields > .f-wide { flex: 2 1 210px; }
+        .row-fields > .f-type { flex: 0 1 150px; }
+        .row-fields > .f-small { flex: 0 1 110px; }
+        .row-fields > .f-auto { flex: 0 0 auto; }
+        .row-fields > .mini-btns { flex: 0 0 auto; margin-left: auto; }
+        .crop4 { display: flex; gap: 4px; }
+        .media-item-row:not(.key-on) .f-keyx, .media-item-row:not(.key-color) .f-keycol { display: none !important; }
+        .f-keycol input[type=color] { width: 44px; height: 32px; padding: 2px; }
+        .crop4 input { min-width: 0; padding: 4px; text-align: center; }
+        .media-item-row.dragging { opacity: 0.4; border: 2px dashed #007bff; }
+        .media-item-row.flash { border-color: #4da3ff; background: #182a40; }
+        .media-item-row[data-kind="obs"] { border-color: #2f5f9e; background: #1a2230; }
+        .media-item-row[data-kind="camera"], .media-item-row[data-kind="capture"] { border-color: #6a4fa0; background: #1f1a2a; }
+        .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; max-height: 60vh; overflow-y: auto; }
+        .pick-card { background: #1b1b1b; border: 2px solid #444; border-radius: 6px; padding: 6px; cursor: pointer; text-align: left; height: auto; display: flex; flex-direction: column; gap: 4px; font-weight: normal; }
+        .pick-card:hover { border-color: #4da3ff; background: #1b2633; }
+        .pick-card img { width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; border-radius: 3px; }
+        .pick-card span { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Only the handle starts a row drag, so selecting text inside an input never moves the row */
+        .drag-handle { text-align: center; font-size: 17px; color: #666; cursor: grab; user-select: none; height: 30px; line-height: 30px; }
+        .drag-handle:hover { color: #fff; }
+        .drag-handle:active { cursor: grabbing; }
+        .mini-btns { display: flex; gap: 4px; }
+        .mini-btns button { padding: 0 8px; }
+
+        .tb-row { background: #1f1f1f; border: 1px solid #444; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+        .tb-row.empty { opacity: 0.6; }
+        .tb-top { display: grid; grid-template-columns: 22px 34px minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 3fr) auto auto; gap: 8px; align-items: end; }
+        .tb-row.dragging { opacity: 0.4; border: 2px dashed #007bff; }
+        .tb-num { height: 30px; line-height: 30px; text-align: center; font-weight: bold; color: #9fb7d1; background: #111; border-radius: 4px; font-size: 12px; }
+        .tb-opts { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.1fr) minmax(0, .8fr) minmax(0, .8fr) minmax(0, .9fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, .8fr) minmax(0, 1.7fr); gap: 8px; align-items: end; padding-left: 64px; }
+        @media (max-width: 1200px) { .tb-top { grid-template-columns: 22px 34px minmax(0, 1fr) minmax(0, 1fr); } .tb-top > .row-field:nth-child(5) { grid-column: 1 / -1; } .tb-top > .mini-btns { grid-column: 1 / 4; } .tb-top > .row-field:last-child { grid-column: 4; } .tb-opts { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-left: 0; } }
+        @media (max-width: 640px) { .tb-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tb-opts > .row-field:last-child { grid-column: 1 / -1; } }
+        .design-wrap { display: flex; gap: 6px; align-items: center; }
+        .design-wrap select { flex: 1; min-width: 0; }
+        .swatch { flex: none; width: 34px; height: 30px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.25); display: flex; flex-direction: column; overflow: hidden; }
+        .swatch span { flex: 1; font-size: 8px; line-height: 15px; text-align: center; font-weight: bold; overflow: hidden; }
+
+        /* narrow window: sidebar becomes a top bar */
+        @media (max-width: 760px) {
+            body { overflow: auto; }
+            .app { flex-direction: column; height: auto; min-height: 100vh; }
+            .side { width: auto; border-right: none; border-bottom: 1px solid #3a3a3a; padding: 8px; gap: 6px; overflow: visible; }
+            .brand { padding: 0 2px 6px; margin: 0; }
+            .tabs { flex-direction: row; flex-wrap: wrap; }
+            .tab-btn { width: auto; flex: 1 1 140px; padding: 7px 8px; border-left: none; border-bottom: 3px solid transparent; }
+            .tab-btn.active { border-bottom-color: #007bff; }
+            .side-spacer { display: none; }
+            .side-actions { flex-direction: row; flex-wrap: wrap; padding-top: 8px; }
+            .side-actions button { flex: 1 1 120px; padding: 7px 6px; }
+            .side-actions .msg, .side-actions .dirty { flex-basis: 100%; }
+            .main { min-height: 70vh; }
+            .pane-body { overflow: visible; }
+            .grid-bg { grid-template-columns: minmax(0, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<datalist id="media-files"></datalist>
+<datalist id="obs-scenes"></datalist>
+<datalist id="cam-list"></datalist>
+<div class="modal" id="pick-modal"><div class="modal-box" style="max-width:760px">
+    <div class="m-title" id="pick-title">Pick a window</div>
+    <div class="pick-grid" id="pick-grid"></div>
+    <div class="m-btns"><button type="button" class="btn-secondary" onclick="document.getElementById('pick-modal').classList.remove('on')">Cancel</button></div>
+</div></div>
+<div class="busy" id="busy">⏳ <span id="busy-text">Copying files…</span></div>
+<div class="app">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="side">
+        <div class="brand"><span>⚙️ Media Setup</span><select id="lang-select" title="Language" onchange="setLanguage(this.value)"></select></div>
+        <div class="tabs">
+            <button type="button" class="tab-btn active" data-tab="general" onclick="showTab('general')"><span>⚙️ General & Quick BG</span></button>
+            <button type="button" class="tab-btn" data-tab="media" onclick="showTab('media')"><span>🖼️ Media List</span><span class="count" id="cnt-media">0</span></button>
+            <button type="button" class="tab-btn" data-tab="background" onclick="showTab('background')"><span>🌌 Background List</span><span class="count" id="cnt-bg">0</span></button>
+            <button type="button" class="tab-btn" data-tab="titlebar" onclick="showTab('titlebar')"><span>📰 Titlebar Presets</span><span class="count" id="cnt-tb">0</span></button>
+            <button type="button" class="tab-btn" data-tab="scenes" onclick="showTab('scenes')"><span>🎬 OBS Scenes</span><span class="count" id="cnt-sc">0</span></button>
+        </div>
+
+        <div class="side-spacer"></div>
+
+        <div class="side-actions">
+            <div class="dirty">● Unsaved changes</div>
+            <button type="button" class="btn-success" id="btn-save" onclick="saveConfig()" title="Ctrl+S">💾 Save</button>
+            <button type="button" class="btn-secondary" id="btn-open-media" onclick="openMediaFolder()">📂 Open media folder</button>
+            <button type="button" class="btn-danger" onclick="resetSetupConfig()">↺ Reset to Default</button>
+            <div id="save-msg" class="msg"></div>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <!-- ===== TAB: General & Quick BG ===== -->
+        <section class="pane active" id="pane-general">
+            <div class="pane-head"><h3>General Settings & Quick Background Presets</h3></div>
+            <div class="pane-body">
+                <div class="card">
+                    <h4>Global Settings</h4>
+                    <div class="checks">
+                        <label class="checkbox-label"><input type="checkbox" id="cfg-visible" checked> Start Visible 🖼️ Media Immediately</label>
+                        <label class="checkbox-label"><input type="checkbox" id="cfg-bgvisible" checked> Background Start Visible 🌌 Immediately</label>
+                    </div>
+                    <div class="checks" style="margin-top:6px;">
+                        <label class="checkbox-label"><input type="checkbox" id="cfg-relay" checked> 📡 Send 📷 camera / 🖥 capture slides to OBS Browser Sources and network displays (WebRTC)</label>
+                    </div>
+                    <p class="note" style="margin:2px 0 0 26px;">Only works while someone is watching such a slide. Turn off to keep camera/capture in the SlideMang window only.</p>
+                    <details class="adv">
+                        <summary>Advanced</summary>
+                        <div class="adv-body">
+                            <div>
+                                <label>Channel Name:</label>
+                                <input type="text" id="cfg-channel" value="obs_control">
+                                <label style="margin-top:4px; color:#777;">Only change this if you run two separate setups on one server.</label>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <div class="card">
+                    <h4>🎨 Quick Panel Backgrounds 1–3 (For Media Group)</h4>
+                    <p class="note">* 3 standby background images that can be quickly switched from the Media Quick Panel.</p>
+                    <div class="grid-bg" id="grid-bgs"></div>
+                </div>
+
+                <div class="card">
+                    <h4>🎨 Quick Panel Backgrounds 1–3 (For Background Group)</h4>
+                    <p class="note">* 3 standby background images that can be quickly switched from the Background Quick Panel.</p>
+                    <div class="grid-bg" id="grid-bbgs"></div>
+                </div>
+
+                <div class="card" id="obs-card">
+                    <h4>📡 OBS connection (for “OBS Source” slides)</h4>
+                    <p class="note">Camera, window and game capture stay in OBS. A Media List item of type “OBS Source” turns that OBS source on while its slide is showing, and off again when the slide changes.</p>
+                    <div class="obs-grid">
+                        <label class="checkbox-label"><input type="checkbox" id="obs-enabled"> Connect to OBS</label>
+                        <div class="row-field"><label>Host:</label><input type="text" id="obs-host" value="127.0.0.1"></div>
+                        <div class="row-field"><label>Port:</label><input type="number" id="obs-port" value="4455" min="1" max="65535"></div>
+                        <div class="row-field"><label>Password:</label><input type="password" id="obs-pass" autocomplete="off"></div>
+                        <button type="button" id="obs-apply" onclick="obsApply()">🔌 Connect & test</button>
+                    </div>
+                    <div class="obs-state" id="obs-state" style="margin-top:10px;">—</div>
+                    <div class="help">In OBS: <b>Tools → WebSocket Server Settings</b> → tick <b>Enable WebSocket server</b> → <b>Show Connect Info</b> to copy the port and password. This is saved right away (not with 💾 Save) and stays on this computer.</div>
+                </div>
+
+                <div class="card">
+                    <h4>📁 Media files</h4>
+                    <p class="note">Files you pick with 📁 or drop on the lists are copied into the program's media folder, so copying the whole SlideMang folder to another computer takes every file and setting with it.</p>
+                    <div id="media-stats" style="font-size:12px; color:#9fb7d1;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TAB: Media List ===== -->
+        <section class="pane" id="pane-media" data-list="media">
+            <div class="pane-head">
+                <h3>MEDIA_LIST <span class="sub">Drag ⠿ or use ▲▼ buttons to reorder</span></h3>
+                <div class="head-actions">
+                    <button type="button" class="btn-secondary" onclick="addFilesTo('media')">📥 Add files…</button>
+                    <button type="button" class="btn-secondary" onclick="addObsItem('media')" title="Show an OBS source (camera, window capture…) as a slide">📡 Add OBS Source</button>
+                    <button type="button" class="btn-secondary" onclick="addLiveItem('camera', 'media')" title="A camera shown by SlideMang itself (on only while its slide shows)">📷 Add Camera</button>
+                    <button type="button" class="btn-secondary" onclick="addLiveItem('capture', 'media')" title="A window or screen captured by SlideMang itself (only while its slide shows)">🖥 Add Capture</button>
+                    <button type="button" onclick="addMediaItem()">+ Add New Item</button>
+                </div>
+            </div>
+            <div class="toolbar">
+                <span>Copy new files into:</span>
+                <select class="folder-select" data-for="media"></select>
+                <button type="button" class="btn-secondary" onclick="newFolder('media')">+ New folder</button>
+                <span class="hint">Tip: drop files anywhere on this list to add them (they go to media/).</span>
+            </div>
+            <div class="pane-body" id="items-container"></div>
+            <div class="drop-overlay">⬇ Drop to copy into media/ and add to MEDIA_LIST</div>
+        </section>
+
+        <!-- ===== TAB: Background List ===== -->
+        <section class="pane" id="pane-background" data-list="background">
+            <div class="pane-head">
+                <h3>BACKGROUND_LIST <span class="sub">Drag ⠿ or use ▲▼ buttons to reorder</span></h3>
+                <div class="head-actions">
+                    <button type="button" class="btn-secondary" onclick="addFilesTo('background')">📥 Add files…</button>
+                    <button type="button" class="btn-secondary" onclick="addObsItem('background')" title="Show an OBS source (e.g. a video already set up in OBS) as a background">📡 Add OBS Source</button>
+                    <button type="button" class="btn-secondary" onclick="addLiveItem('camera', 'background')">📷 Add Camera</button>
+                    <button type="button" class="btn-secondary" onclick="addLiveItem('capture', 'background')">🖥 Add Capture</button>
+                    <button type="button" onclick="addBgListItem()">+ Add New Background</button>
+                </div>
+            </div>
+            <div class="toolbar">
+                <span>Copy new files into:</span>
+                <select class="folder-select" data-for="background"></select>
+                <button type="button" class="btn-secondary" onclick="newFolder('background')">+ New folder</button>
+                <span class="hint">Tip: drop files anywhere on this list to add them (they go to media/).</span>
+            </div>
+            <div class="pane-body" id="bgitems-container"></div>
+            <div class="drop-overlay">⬇ Drop to copy into media/ and add to BACKGROUND_LIST</div>
+        </section>
+
+        <!-- ===== TAB: Titlebar Presets ===== -->
+        <section class="pane" id="pane-titlebar">
+            <div class="pane-head">
+                <h3>Titlebar Presets <span class="sub">Add/remove unlimited · Drag ⠿ or use ▲▼ to reorder</span></h3>
+                <button type="button" onclick="addTbItem()">+ Add New Titlebar</button>
+            </div>
+            <div class="pane-body" id="tb-container"></div>
+        </section>
+
+        <!-- ===== TAB: OBS Scenes ===== -->
+        <section class="pane" id="pane-scenes">
+            <div class="pane-head">
+                <h3>OBSSCENE_LIST <span class="sub">Buttons in the Controller's 🎬 OBS Scenes panel · drag ⠿ or ▲▼ to reorder</span></h3>
+                <button type="button" onclick="addSceneRow(null, true)">+ Add Scene Button</button>
+            </div>
+            <div class="toolbar"><span class="hint">The same scene can be added more than once with a different transition. The transition is used for that switch only; OBS keeps its own setting. Empty list = the Controller shows every OBS scene.</span></div>
+            <div class="pane-body" id="sc-container"></div>
+        </section>
+
+    </main>
+</div>
+<input type="file" id="browser-picker" style="display:none" multiple>
+<div class="modal" id="modal"><div class="modal-box">
+    <div class="m-title" id="modal-title"></div>
+    <input type="text" id="modal-input">
+    <div class="m-btns"><button type="button" class="btn-secondary" id="modal-cancel">Cancel</button><button type="button" id="modal-ok">OK</button></div>
+</div></div>
+
+    <script>
+        var TB_DESIGN_COUNT = 30;
+
+        var TB_DESIGNS = [
+            ['#e53935','#fff','#0f0f0f','#fff'], ['#0277bd','#fff','#0f0f0f','#fff'], ['#2e7d32','#fff','#0f0f0f','#fff'],
+            ['#333','#fff','#0a0a0a','#ccc'],    ['#007bff','#fff','#141414','#e0e0e0'], ['#212121','#fff','#0a0a0a','#aaa'],
+            ['#424242','#fff','#0a0a0a','#ccc'], ['#ff9800','#000','#000','#ffeb3b'],    ['#00ffcc','#000','#050f14','#00ffcc'],
+            ['#d4af37','#000','#14120a','#f3e5ab'], ['#7b1fa2','#fff','#140a1e','#e1bee7'], ['#ff00ff','#fff','#0a0014','#00ffff'],
+            ['#c62828','#fff','#ffffff','#111'], ['#0d47a1','#fff','#ffffff','#0d47a1'], ['#ec407a','#fff','#fff0f5','#880e4f'],
+            ['#26a69a','#fff','#e0f2f1','#004d40'], ['#ff512f','#fff','#1e0a14','#ffd3e0'], ['#0072ff','#fff','#0a1a33','#d6ecff'],
+            ['#8d93a8','#fff','#4a4f63','#fff'], ['#ffffff','#000','#000000','#fff'],    ['#00ff41','#000','#000000','#00ff41'],
+            ['#ffeb3b','#000','#ffffff','#000'], ['#8e24aa','#fff','#fce4ec','#6a1b9a'], ['#4a148c','#ffd54f','#1a0033','#fff'],
+            ['#e65100','#fff','#1e0000','#ffcc80'], ['#4fc3f7','#01579b','#e1f5fe','#01579b'], ['#1b5e20','#c8e6c9','#0a1e0a','#c8e6c9'],
+            ['#ffea00','#000','#0a0a1a','#ff2a6d'], ['#111111','#fff','#f5f0e1','#222'], ['#ff4081','#fff','#1a1a1a','#fff']
+        ];
+
+        var APP = window.SlideMangApp || null;   // present only inside the SlideMang app
+        var VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
+        var mediaIndex = { files: [], dirs: [], set: {} };
+        var dirty = false;
+        var loadedChannel = 'obs_control';
+
+        function $(id) { return document.getElementById(id); }
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function numOr(v, d) { var n = parseFloat(v); return isNaN(n) ? d : n; }
+        function pad2(n) { return (n < 10 ? '0' : '') + n; }
+        var flashTimer = 0;
+        function flash(text, isErr) {
+            var m = $('save-msg'); m.innerText = text; m.classList.toggle('err', !!isErr);
+            clearTimeout(flashTimer); flashTimer = setTimeout(function () { m.innerText = ''; }, isErr ? 7000 : 3500);
+        }
+        function busy(on, text) { document.body.classList.toggle('is-busy', !!on); if (text) $('busy-text').innerText = text; }
+        function fmtSize(b) {
+            if (!(b >= 0)) return '?';
+            var u = ['B', 'KB', 'MB', 'GB', 'TB'], i = 0;
+            while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; }
+            return (i ? b.toFixed(1) : b) + ' ' + u[i];
+        }
+        function setDirty(on) { dirty = !!on; document.body.classList.toggle('is-dirty', dirty); }
+
+        function api(method, url, body, raw) {
+            var opt = { method: method, headers: { 'X-SlideMang': '1' } };
+            if (raw !== undefined) opt.body = raw;
+            else if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+            return fetch(url, opt).then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { j.status = r.status; throw j; } return j; });
+            });
+        }
+        function errText(e) {
+            if (e && e.code === 'NO_SPACE') return t('Not enough disk space: need {need}, free {free}. Nothing was copied.', { need: fmtSize(e.need), free: fmtSize(e.free) });
+            return (e && e.message) || String(e);
+        }
+
+        /* ---------- tabs ---------- */
+        function showTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === name); });
+            document.querySelectorAll('.pane').forEach(function (p) { p.classList.toggle('active', p.id === 'pane-' + name); });
+            try { localStorage.setItem('setup_media_tab', name); } catch (e) {}
+        }
+
+        function updateCounts() {
+            $('cnt-media').innerText = document.querySelectorAll('#items-container .media-item-row').length;
+            $('cnt-bg').innerText = document.querySelectorAll('#bgitems-container .media-item-row').length;
+            var filled = 0;
+            document.querySelectorAll('.tb-row').forEach(function (r) {
+                if (r.querySelector('.t-header').value.trim() || r.querySelector('.t-body').value.trim()) filled++;
+            });
+            $('cnt-tb').innerText = filled;
+            $('cnt-sc').innerText = document.querySelectorAll('.sc-row').length;
+            emptyNotes();
+        }
+        function emptyNotes() {
+            [['items-container', '.media-item-row'], ['bgitems-container', '.media-item-row']].forEach(function (p) {
+                var c = $(p[0]), has = !!c.querySelector(p[1]), note = c.querySelector('.empty-note');
+                if (!has && !note) {
+                    note = document.createElement('div'); note.className = 'empty-note';
+                    note.innerText = t('No items yet. Drop image/video files here, or use “📥 Add files…”.');
+                    c.appendChild(note);
+                } else if (has && note) note.remove();
+            });
+        }
+
+        /* ---------- media folder index (datalist, missing-file warnings, sub-folders) ---------- */
+        function refreshMediaIndex() {
+            return api('GET', '/api/media').then(function (r) {
+                mediaIndex.files = r.files || []; mediaIndex.dirs = r.dirs || []; mediaIndex.set = {};
+                var dl = $('media-files'); dl.innerHTML = '';
+                var total = 0;
+                mediaIndex.files.forEach(function (f) {
+                    mediaIndex.set[f.path] = true; total += f.size;
+                    var o = document.createElement('option'); o.value = f.path; dl.appendChild(o);
+                });
+                $('media-stats').innerText = t('{n} files · {size} in media/ · {d} sub-folders', { n: mediaIndex.files.length, size: fmtSize(total), d: mediaIndex.dirs.length });
+                document.querySelectorAll('.folder-select').forEach(function (sel) {
+                    var cur = sel.value || '';
+                    sel.innerHTML = '<option value="">media/</option>' + mediaIndex.dirs.map(function (d) { return '<option value="' + esc(d) + '">media/' + esc(d) + '/</option>'; }).join('');
+                    sel.value = mediaIndex.dirs.indexOf(cur) >= 0 ? cur : '';
+                });
+                checkMissingAll();
+            }).catch(function () {});
+        }
+        function checkMissing(input) {
+            var v = input.value.trim().replace(/\\/g, '/').replace(/^\.?\/+/, '').replace(/^media\//, '');
+            var miss = !!v && mediaIndex.files.length >= 0 && !mediaIndex.set[v];
+            input.classList.toggle('missing', miss);
+            var f = input.closest('.row-field'); if (f) f.classList.toggle('has-missing', miss);
+        }
+        function checkMissingAll() { document.querySelectorAll('input.media-path').forEach(checkMissing); }
+
+        function folderOf(listName) {
+            var sel = document.querySelector('.folder-select[data-for="' + listName + '"]');
+            return sel ? sel.value : '';
+        }
+        /* window.prompt() does not exist in Electron, so a small dialog of our own */
+        function askText(title, cb) {
+            var m = $('modal'), inp = $('modal-input');
+            $('modal-title').innerText = title;
+            inp.value = '';
+            m.classList.add('on');
+            setTimeout(function () { inp.focus(); }, 30);
+            function close(v) { m.classList.remove('on'); $('modal-ok').onclick = $('modal-cancel').onclick = inp.onkeydown = null; if (v) cb(v); }
+            $('modal-ok').onclick = function () { close(inp.value.trim()); };
+            $('modal-cancel').onclick = function () { close(''); };
+            inp.onkeydown = function (e) { if (e.key === 'Enter') close(inp.value.trim()); else if (e.key === 'Escape') close(''); };
+        }
+        function newFolder(listName) {
+            var cur = folderOf(listName);
+            askText(t('New folder name (inside media/{cur}):', { cur: cur ? cur + '/' : '' }), function (name) { createFolder(listName, cur, name); });
+        }
+        function createFolder(listName, cur, name) {
+            api('POST', '/api/media/mkdir', { dir: (cur ? cur + '/' : '') + name }).then(function (r) {
+                return refreshMediaIndex().then(function () {
+                    var sel = document.querySelector('.folder-select[data-for="' + listName + '"]');
+                    if (sel) sel.value = r.dir;
+                    flash(t('✓ Folder created: media/{dir}', { dir: r.dir }));
+                });
+            }).catch(function (e) { flash(errText(e), true); });
+        }
+
+        /* ---------- copy files into media/ ----------
+         * In the app: real paths -> the app copies them (fast, any size).
+         * In a browser (phone / other PC): the files are uploaded.            */
+        function importFileObjects(files, sub) {
+            files = Array.prototype.slice.call(files || []).filter(function (f) { return f && f.size > 0; });
+            if (!files.length) return Promise.resolve([]);
+            if (APP) {
+                var paths = files.map(function (f) { return APP.pathForFile(f); }).filter(Boolean);
+                if (paths.length === files.length) return importPaths(paths, sub);
+            }
+            return uploadFiles(files, sub);
+        }
+        function importPaths(paths, sub) {
+            if (!paths.length) return Promise.resolve([]);
+            busy(true, t('Copying {n} file(s)…', { n: paths.length }));
+            return APP.importFiles(paths, sub).then(function (r) {
+                busy(false);
+                if (!r || !r.ok) throw r || {};
+                return afterImport(r.files || []);
+            }, function (e) { busy(false); throw e; });
+        }
+        function uploadFiles(files, sub) {
+            var total = files.reduce(function (a, f) { return a + f.size; }, 0);
+            var out = [], i = 0;
+            busy(true, t('Uploading {n} file(s) ({size})…', { n: files.length, size: fmtSize(total) }));
+            function next() {
+                if (i >= files.length) { busy(false); return afterImport(out); }
+                var f = files[i++];
+                return api('PUT', '/api/media/upload?dir=' + encodeURIComponent(sub || '') + '&name=' + encodeURIComponent(f.name), undefined, f)
+                    .then(function (r) { out.push(r); return next(); });
+            }
+            return next().catch(function (e) { busy(false); throw e; });
+        }
+        function afterImport(list) {
+            var ok = list.filter(function (x) { return x.path; });
+            var copied = ok.filter(function (x) { return x.copied; }).length;
+            var failed = list.length - ok.length;
+            var msg = t('✓ {n} file(s) ready ({c} copied, {s} already in media/)', { n: ok.length, c: copied, s: ok.length - copied });
+            if (failed) msg += ' · ' + t('{f} failed', { f: failed });
+            flash(msg, failed > 0);
+            return refreshMediaIndex().then(function () { return ok.map(function (x) { return x.path; }); });
+        }
+
+        /** 📁 button next to a field: choose a file, copy it, put its media path into the field */
+        function pickInto(input, kind, sub, onDone) {
+            var done = function (rels) {
+                if (!rels.length) return;
+                input.value = rels[0];
+                checkMissing(input);
+                setDirty(true);
+                if (onDone) onDone(rels[0]);
+            };
+            var fail = function (e) { flash(errText(e), true); alert(errText(e)); };
+            if (APP) {
+                APP.pickFiles({ kind: kind, multi: false }).then(function (paths) { return importPaths(paths, sub); }).then(done).catch(fail);
+            } else {
+                browserPick(kind, false, function (files) { importFileObjects(files, sub).then(done).catch(fail); });
+            }
+        }
+        function browserPick(kind, multi, cb) {
+            var inp = $('browser-picker');
+            inp.value = '';
+            inp.multiple = !!multi;
+            inp.accept = kind === 'image' ? 'image/*' : 'image/*,video/*';
+            inp.onchange = function () { cb(Array.prototype.slice.call(inp.files || [])); };
+            inp.click();
+        }
+
+        /** 📥 Add files… : pick several files, copy them, one new row per file */
+        function addFilesTo(listName) {
+            var sub = folderOf(listName);
+            var add = function (rels) { addRowsFor(listName, rels); };
+            var fail = function (e) { flash(errText(e), true); alert(errText(e)); };
+            if (APP) APP.pickFiles({ kind: 'media', multi: true }).then(function (p) { return importPaths(p, sub); }).then(add).catch(fail);
+            else browserPick('media', true, function (files) { importFileObjects(files, sub).then(add).catch(fail); });
+        }
+        function stemOf(rel) { var n = rel.split('/').pop(); var i = n.lastIndexOf('.'); return i > 0 ? n.slice(0, i) : n; }
+        function addRowsFor(listName, rels) {
+            if (!rels.length) return;
+            var c = listName === 'background' ? $('bgitems-container') : $('items-container');
+            var first = null;
+            rels.forEach(function (rel) {
+                var row = addItemDOM(c, rel, stemOf(rel), '', '', '', true);
+                if (!first) first = row;
+                row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600);
+            });
+            updateCounts(); checkMissingAll(); setDirty(true);
+            if (first) first.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+
+        /* ---------- drag & drop files from Explorer onto a list (simple mode: always media/ root) ---------- */
+        function isFileDrag(e) { var t2 = e.dataTransfer && e.dataTransfer.types; return !!t2 && Array.prototype.indexOf.call(t2, 'Files') >= 0; }
+        document.querySelectorAll('.pane[data-list]').forEach(function (pane) {
+            var depth = 0;
+            pane.addEventListener('dragenter', function (e) { if (!isFileDrag(e)) return; e.preventDefault(); depth++; pane.classList.add('drop-on'); });
+            pane.addEventListener('dragover', function (e) { if (!isFileDrag(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+            pane.addEventListener('dragleave', function (e) { if (!isFileDrag(e)) return; depth = Math.max(0, depth - 1); if (!depth) pane.classList.remove('drop-on'); });
+            pane.addEventListener('drop', function (e) {
+                if (!isFileDrag(e)) return;
+                e.preventDefault(); depth = 0; pane.classList.remove('drop-on');
+                var files = Array.prototype.slice.call(e.dataTransfer.files || []);
+                var skipped = files.filter(function (f) { return !f.size; }).length; // folders / empty files
+                importFileObjects(files, '').then(function (rels) {
+                    addRowsFor(pane.getAttribute('data-list'), rels);
+                    if (skipped) flash(t('{n} folder(s) or empty file(s) skipped — drop files, not folders', { n: skipped }), true);
+                }).catch(function (e2) { flash(errText(e2), true); alert(errText(e2)); });
+            });
+        });
+        // dropping a file elsewhere must not make the window navigate to it
+        window.addEventListener('dragover', function (e) { if (isFileDrag(e)) e.preventDefault(); });
+        window.addEventListener('drop', function (e) { if (isFileDrag(e)) e.preventDefault(); });
+
+        /* ---------- row drag to reorder (handle only) ---------- */
+        function makeSortable(row, container, sel, onEnd) {
+            var handle = row.querySelector('.drag-handle');
+            handle.addEventListener('mousedown', function () { row.draggable = true; });
+            handle.addEventListener('mouseup', function () { if (!row.classList.contains('dragging')) row.draggable = false; });
+            row.addEventListener('dragstart', function (e) {
+                if (!row.draggable) { e.preventDefault(); return; }
+                row.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/x-row', '1'); } catch (er) {}
+            });
+            row.addEventListener('dragend', function () { row.classList.remove('dragging'); row.draggable = false; if (onEnd) onEnd(); setDirty(true); });
+            row.addEventListener('dragover', function (e) {
+                var dragging = container.querySelector(sel + '.dragging');
+                if (!dragging) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragging !== row) {
+                    var rect = row.getBoundingClientRect();
+                    if (e.clientY < rect.top + rect.height / 2) container.insertBefore(dragging, row);
+                    else container.insertBefore(dragging, row.nextSibling);
+                }
+            });
+        }
+        document.addEventListener('mouseup', function () {
+            document.querySelectorAll('[draggable="true"]').forEach(function (r) { if (!r.classList.contains('dragging')) r.draggable = false; });
+        });
+
+        /* ---------- quick background fields ---------- */
+        function buildBgFields() {
+            [['grid-bgs', 'cfg-bg', 'Media BG {n}:'], ['grid-bbgs', 'cfg-bbg', 'Background BG {n}:']].forEach(function (g) {
+                var grid = $(g[0]); grid.innerHTML = '';
+                for (var n = 1; n <= 3; n++) {
+                    var f = document.createElement('div'); f.className = 'row-field';
+                    f.innerHTML = '<label>' + esc(t(g[2], { n: n })) + '</label><div class="file-input-group">' +
+                        '<input type="text" class="media-path" list="media-files" id="' + g[1] + n + '" placeholder="' + esc(t('e.g. bg1.png')) + '">' +
+                        '<button type="button" class="btn-secondary" title="' + esc(t('Select file')) + '">📁</button>' +
+                        '<button type="button" class="btn-secondary" title="' + esc(t('Clear')) + '">✕</button></div>' +
+                        '<div class="miss-note">' + esc(t('⚠ Not found in the media folder')) + '</div>';
+                    grid.appendChild(f);
+                    (function (inp, btns) {
+                        btns[0].onclick = function () { pickInto(inp, 'image', ''); };
+                        btns[1].onclick = function () { inp.value = ''; checkMissing(inp); setDirty(true); };
+                        inp.addEventListener('input', function () { checkMissing(inp); });
+                    })(f.querySelector('input'), f.querySelectorAll('button'));
+                }
+            });
+        }
+
+        /* ---------- load / gather ---------- */
+        function loadDataToUI(data) {
+            data = data || {};
+            loadedChannel = data.channel || 'obs_control';
+            $('cfg-channel').value = loadedChannel;
+            $('cfg-visible').checked = data.startVisible !== false;
+            $('cfg-bgvisible').checked = data.bgStartVisible !== false;
+            $('cfg-relay').checked = data.liveRelay !== false;
+
+            var bgs = data.bgs || ['', '', ''], bbgs = data.bbgs || ['', '', ''];
+            for (var n = 1; n <= 3; n++) { $('cfg-bg' + n).value = bgs[n - 1] || ''; $('cfg-bbg' + n).value = bbgs[n - 1] || ''; }
+
+            var container = $('items-container');
+            container.innerHTML = '';
+            (Array.isArray(data.list) ? data.list : []).forEach(function (item) {
+                addItemDOM(container, item.file, item.desc || '', item.type || '', item.fit || '', item.thumb || '', item.loop !== false, item);
+            });
+
+            var bgContainer = $('bgitems-container');
+            bgContainer.innerHTML = '';
+            (Array.isArray(data.bgList) ? data.bgList : []).forEach(function (item) {
+                addItemDOM(bgContainer, item.file, item.desc || '', item.type || '', item.fit || '', item.thumb || '', item.loop !== false, item);
+            });
+
+            $('sc-container').innerHTML = '';
+            (Array.isArray(data.obsScenes) ? data.obsScenes : []).forEach(function (sc) { addSceneRow(sc, false); });
+
+            var tbc = $('tb-container');
+            tbc.innerHTML = '';
+            (Array.isArray(data.titlebars) ? data.titlebars : []).forEach(function (tb) { if (tb && (String(tb.header || '').trim() || String(tb.body || '').trim())) addTbRow(tb); });
+            renumberTb();
+            updateCounts();
+            checkMissingAll();
+        }
+
+        function addMediaItem() {
+            var row = addItemDOM($('items-container'), '', '', '', '', '', true);
+            updateCounts(); setDirty(true);
+            row.scrollIntoView({ block: 'nearest' }); row.querySelector('.inp-file').focus();
+        }
+        function addBgListItem() {
+            var row = addItemDOM($('bgitems-container'), '', '', '', '', '', true);
+            updateCounts(); setDirty(true);
+            row.scrollIntoView({ block: 'nearest' }); row.querySelector('.inp-file').focus();
+        }
+
+        function normFit(f) {
+            if (f === 'contain' || f === 'cover') return f;
+            if (f === 'none' || f === 'actual') return 'none';
+            return '';
+        }
+
+        /* One row of MEDIA_LIST / BACKGROUND_LIST.
+         * Kinds: file (Auto / image / video), obs (OBS Source), camera, capture (window / screen).
+         * Every field says in data-show which kinds it belongs to. */
+        function kindOf(type) { return (type === 'obs' || type === 'camera' || type === 'capture') ? type : 'file'; }
+        function opt(v, label, cur) { return '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(label) + '</option>'; }
+
+        function addItemDOM(container, file, desc, type, fit, thumb, loop, item) {
+            var div = document.createElement('div');
+            div.className = 'media-item-row';
+            item = item || {};
+            var kind = kindOf(type);
+            fit = normFit(fit != null && fit !== '' ? fit : (kind === 'camera' ? 'cover' : (kind === 'capture' ? 'contain' : '')));
+            var listName = container.id === 'bgitems-container' ? 'background' : 'media';
+            var liveOpts = opt('obs', '📡 ' + t('OBS Source'), type) + opt('camera', '📷 ' + t('Camera'), type) + opt('capture', '🖥 ' + t('Window / Screen capture'), type);
+            var crop = Array.isArray(item.crop) ? item.crop : [0, 0, 0, 0];
+            function F(show, cls, html) { return '<div class="row-field ' + (cls || '') + '" data-show="' + show + '">' + html + '</div>'; }
+            function L(txt) { return '<label>' + esc(t(txt)) + '</label>'; }
+
+            div.innerHTML =
+                '<div class="drag-handle" title="' + esc(t('Drag to reorder')) + '">⠿</div>' +
+                '<div class="row-fields">' +
+                F('all', 'f-type', L('Type:') + '<select class="inp-type">' +
+                    opt('', t('Auto'), type) + opt('image', 'image', type) + opt('video', 'video', type) + liveOpts + '</select>') +
+                // file
+                F('file', 'f-wide', L('File Name:') + '<div class="file-input-group">' +
+                    '<input type="text" class="inp-file media-path" list="media-files" value="' + esc(file || '') + '" placeholder="' + esc(t('e.g. image.png')) + '">' +
+                    '<button type="button" class="btn-secondary b-file" title="' + esc(t('Select file')) + '">📁</button></div>' +
+                    '<div class="miss-note">' + esc(t('⚠ Not found in the media folder')) + '</div>') +
+                // obs
+                F('obs', 'f-wide', L('OBS Source:') + '<div class="file-input-group">' +
+                    '<input type="text" class="inp-obs-source" value="' + esc(item.obsSource || '') + '" placeholder="' + esc(t('e.g. Webcam')) + '">' +
+                    '<button type="button" class="btn-secondary b-obs-refresh" title="' + esc(t('Reload the list from OBS')) + '">↻</button></div>') +
+                F('obs', '', L('OBS Scene:') + '<input type="text" class="inp-obs-scene" list="obs-scenes" value="' + esc(item.type === 'obs' ? (item.obsScene || '') : '') + '" placeholder="' + esc(t('(current scene)')) + '">') +
+                F('obs', '', L('Behavior:') + '<select class="inp-obs-mode">' +
+                    opt('', t('Slide — one at a time (default)'), item.obsMode || '') + opt('toggle', t('Toggle — on/off by itself'), item.obsMode || '') + '</select>') +
+                // camera
+                F('camera', 'f-wide', L('Camera:') + '<div class="file-input-group">' +
+                    '<input type="text" class="inp-cam" list="cam-list" value="' + esc(item.device || '') + '" placeholder="' + esc(t('(first camera)')) + '">' +
+                    '<button type="button" class="btn-secondary b-cam" title="' + esc(t('Find cameras (turns the camera on for a moment)')) + '">↻</button></div>') +
+                F('camera', 'f-small', L('Resolution:') + '<select class="inp-res">' + opt('auto', t('Auto'), item.res || 'auto') + opt('720p', '720p', item.res) + opt('1080p', '1080p', item.res) +
+                    opt('1440p', '2K (1440p)', item.res) + opt('2160p', '4K (2160p)', item.res) + '</select>') +
+                F('camera', 'f-small', L('FPS:') + '<select class="inp-cfps">' + opt(30, '30', item.fps || 30) + opt(60, '60', item.fps) + '</select>') +
+                F('camera', 'f-auto', '<label class="checkbox-label"><input type="checkbox" class="inp-mirror"' + (item.mirror ? ' checked' : '') + '> ' + esc(t('Mirror')) + '</label>') +
+                // capture
+                F('capture', 'f-small', L('Capture:') + '<select class="inp-csrc">' + opt('window', t('Window'), item.source || 'window') + opt('screen', t('Screen'), item.source) + '</select>') +
+                F('capture', 'f-wide', L('Window title (contains):') + '<div class="file-input-group">' +
+                    '<input type="text" class="inp-match" value="' + esc(item.match || '') + '" placeholder="' + esc(t('e.g. Chrome')) + '">' +
+                    '<button type="button" class="btn-secondary b-pick" title="' + esc(t('Pick from the open windows')) + '">🖼</button></div>') +
+                F('capture', 'f-small', L('FPS:') + '<select class="inp-xfps">' + opt(15, '15', item.fps || 30) + opt(30, '30', item.fps || 30) + opt(60, '60', item.fps || 30) + '</select>') +
+                F('capture', '', L('Crop % (top right bottom left):') + '<div class="crop4">' +
+                    [0, 1, 2, 3].map(function (k) { return '<input type="number" class="inp-crop" min="0" max="45" step="1" value="' + (crop[k] || 0) + '">'; }).join('') + '</div>') +
+                // transparent background (camera + capture)
+                F('camera capture', '', L('Transparent background:') + '<select class="inp-key" data-tip="' + esc(t('Cameras and window capture carry no transparency. Chroma key makes one color (e.g. a green screen) transparent.')) + '">' +
+                    opt('', t('Off'), item.key || '') + opt('color', t('Chroma key (e.g. green screen)'), item.key || '') + '</select>') +
+                F('camera capture', 'f-auto f-keycol', L('Key color:') + '<input type="color" class="inp-keycol" value="' + esc(item.keyColor || '#00ff00') + '">') +
+                F('camera capture', 'f-small f-keyx', L('Threshold %:') + '<input type="number" class="inp-keylvl" min="0" max="100" step="1" value="' + (item.keyLevel != null ? item.keyLevel : (item.key === 'color' ? 25 : 4)) + '" data-tip="' + esc(t('How much is made transparent. Raise it if a dark or colored fringe stays; lower it if parts of the picture disappear.')) + '">') +
+                F('camera capture', 'f-small f-keyx', L('Soft edge %:') + '<input type="number" class="inp-keysoft" min="0" max="100" step="1" value="' + (item.keySoft != null ? item.keySoft : 10) + '">') +
+                // shared
+                F('all', 'f-wide', L('Description:') + '<input type="text" class="inp-desc" value="' + esc(desc) + '" placeholder="' + esc(t('Description')) + '">') +
+                F('file camera capture', '', L('Fit Mode:') + '<select class="inp-fit">' +
+                    opt('', t('Full Canvas (default)'), fit) + opt('none', t('Actual Size'), fit) +
+                    opt('contain', t('Original Ratio · Contain'), fit) + opt('cover', t('Original Ratio · Cover'), fit) + '</select>') +
+                F('all', '', L('Thumbnail:') + '<div class="file-input-group">' +
+                    '<input type="text" class="inp-thumb media-path" list="media-files" value="' + esc(thumb || '') + '" placeholder="' + esc(t('e.g. thumb.jpg')) + '">' +
+                    '<button type="button" class="btn-secondary b-thumb" title="' + esc(t('Select Thumbnail')) + '">📁</button></div>' +
+                    '<div class="miss-note">' + esc(t('⚠ Not found in the media folder')) + '</div>') +
+                F('file', 'f-auto', '<label class="checkbox-label"><input type="checkbox" class="inp-loop"' + (loop ? ' checked' : '') + '> ' + esc(t('Loop')) + '</label>') +
+                '<div class="mini-btns" data-show="all">' +
+                    '<button type="button" class="btn-secondary b-up" title="' + esc(t('Move Up')) + '">▲</button>' +
+                    '<button type="button" class="btn-secondary b-down" title="' + esc(t('Move Down')) + '">▼</button>' +
+                    '<button type="button" class="btn-danger b-del">' + esc(t('Delete')) + '</button>' +
+                '</div>' +
+                '</div>';
+
+            var q = function (c) { return div.querySelector(c); };
+            var fileIn = q('.inp-file'), descIn = q('.inp-desc'), thumbIn = q('.inp-thumb');
+            q('.b-file').onclick = function () {
+                pickInto(fileIn, 'media', folderOf(listName), function (rel) { if (!descIn.value) descIn.value = stemOf(rel); });
+            };
+            q('.b-thumb').onclick = function () { pickInto(thumbIn, 'image', folderOf(listName)); };
+            q('.b-up').onclick = function () { moveRow(this, -1, '.media-item-row'); };
+            q('.b-down').onclick = function () { moveRow(this, 1, '.media-item-row'); };
+            q('.b-del').onclick = function () { div.remove(); updateCounts(); setDirty(true); };
+            [fileIn, thumbIn].forEach(function (inp) { inp.addEventListener('input', function () { checkMissing(inp); }); });
+
+            // OBS Source: suggestions from OBS
+            var typeSel = q('.inp-type'), srcIn = q('.inp-obs-source'), sceneIn = q('.inp-obs-scene');
+            var listId = 'obs-src-' + Math.random().toString(36).slice(2, 9);
+            var dl = document.createElement('datalist'); dl.id = listId; div.appendChild(dl);
+            srcIn.setAttribute('list', listId);
+            function fillSources() { obsFillSourceList(dl, sceneIn.value.trim()); }
+            sceneIn.addEventListener('input', fillSources);
+            srcIn.addEventListener('focus', function () { obsEnsureSources().then(fillSources); });
+            q('.b-obs-refresh').onclick = function () { obsSources = null; obsEnsureSources(true).then(fillSources); };
+            div._obsFill = fillSources;
+            // camera / capture helpers
+            q('.b-cam').onclick = function () { camDetect(true); };
+            q('.inp-cam').addEventListener('focus', function () { camDetect(false); });
+            q('.b-pick').onclick = function () {
+                pickWindow(q('.inp-csrc').value, function (w) {
+                    q('.inp-csrc').value = w.kind; q('.inp-match').value = w.name;
+                    if (!descIn.value) descIn.value = w.name;
+                    setDirty(true);
+                });
+            };
+
+            var lastKind = kind;
+            function applyType() {
+                var k = kindOf(typeSel.value);
+                div.querySelectorAll('[data-show]').forEach(function (el) {
+                    var show = el.getAttribute('data-show');
+                    el.style.display = (show === 'all' || show.split(' ').indexOf(k) >= 0) ? '' : 'none';
+                });
+                div.setAttribute('data-kind', k);
+                if (k !== lastKind) {   // sensible fit when switching kind
+                    var fs = q('.inp-fit');
+                    if (k === 'camera' && !fs.value) fs.value = 'cover';
+                    if (k === 'capture' && !fs.value) fs.value = 'contain';
+                    lastKind = k;
+                }
+                if (k === 'file') checkMissing(fileIn);
+                else { fileIn.classList.remove('missing'); fileIn.closest('.row-field').classList.remove('has-missing'); }
+                if (k === 'obs') obsEnsureSources().then(fillSources);
+            }
+            typeSel.addEventListener('change', applyType);
+            var keySel = q('.inp-key');
+            function keyUi() {
+                div.classList.toggle('key-on', !!keySel.value);
+                div.classList.toggle('key-color', keySel.value === 'color');
+            }
+            keySel.addEventListener('change', function () {
+                q('.inp-keylvl').value = keySel.value === 'color' ? 25 : 4;   // each mode has its own sensible start
+                keyUi();
+            });
+            keyUi();
+
+            container.appendChild(div);
+            makeSortable(div, container, '.media-item-row', updateCounts);
+            checkMissing(thumbIn);
+            applyType();
+            return div;
+        }
+
+        function moveRow(btn, direction, sel) {
+            var row = btn.closest(sel);
+            if (direction === -1 && row.previousElementSibling && row.previousElementSibling.matches(sel)) {
+                row.parentNode.insertBefore(row, row.previousElementSibling);
+            } else if (direction === 1 && row.nextElementSibling && row.nextElementSibling.matches(sel)) {
+                row.parentNode.insertBefore(row.nextElementSibling, row);
+            }
+            renumberTb();
+            updateCounts();
+            setDirty(true);
+        }
+
+        function selOpts(pairs, cur) {
+            return pairs.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === cur ? ' selected' : '') + '>' + esc(p[1]) + '</option>'; }).join('');
+        }
+
+        function addTbItem() {
+            var row = addTbRow(null);
+            renumberTb();
+            updateCounts();
+            setDirty(true);
+            row.scrollIntoView({ block: 'nearest' }); row.querySelector('.t-header').focus();
+        }
+
+        function addTbRow(s) {
+            s = s || {};
+            var preset = /^p\d+$/.test(s.preset || '') ? s.preset : 'p1';
+            var hAlign = s.hAlign || 'center';
+            var align = s.align || 'left';
+            var wtype = s.widthType === 'percent' ? 'percent' : 'auto';
+
+            var designOpts = '';
+            for (var n = 1; n <= TB_DESIGN_COUNT; n++) designOpts += '<option value="p' + n + '"' + (('p' + n) === preset ? ' selected' : '') + '>' + esc(t('Design {n}', { n: n })) + '</option>';
+            var posPairs = [['left', t('Left')], ['center', t('Center')], ['right', t('Right')]];
+
+            var div = document.createElement('div');
+            div.className = 'tb-row';
+            div.innerHTML =
+                '<div class="tb-top">' +
+                    '<div class="drag-handle" title="' + esc(t('Drag to reorder')) + '">⠿</div>' +
+                    '<div class="tb-num"></div>' +
+                    '<div class="row-field"><label>' + esc(t('Bar Name:')) + '</label><input type="text" class="t-name" value="' + esc(s.name || '') + '" placeholder="' + esc(t('Optional')) + '"></div>' +
+                    '<div class="row-field"><label>' + esc(t('Header:')) + '</label><input type="text" class="t-header" value="' + esc(s.header || '') + '" placeholder="' + esc(t('e.g. Breaking News')) + '"></div>' +
+                    '<div class="row-field"><label>' + esc(t('Body:')) + '</label><textarea class="t-body" placeholder="' + esc(t('Message...')) + '">' + esc(s.body || '') + '</textarea></div>' +
+                    '<div class="mini-btns">' +
+                        '<button type="button" class="btn-secondary b-up" title="' + esc(t('Move Up')) + '">▲</button>' +
+                        '<button type="button" class="btn-secondary b-down" title="' + esc(t('Move Down')) + '">▼</button>' +
+                    '</div>' +
+                    '<div class="row-field"><button type="button" class="btn-danger b-del">' + esc(t('Delete')) + '</button></div>' +
+                '</div>' +
+                '<div class="tb-opts">' +
+                    '<div class="row-field"><label>' + esc(t('Design:')) + '</label><div class="design-wrap"><select class="t-preset">' + designOpts + '</select><div class="swatch"><span class="sw-h"></span><span class="sw-b"></span></div></div></div>' +
+                    '<div class="row-field"><label>' + esc(t('Position:')) + '</label><select class="t-halign">' + selOpts(posPairs, hAlign) + '</select></div>' +
+                    '<div class="row-field"><label>' + esc(t('Edge Dist (%):')) + '</label><input type="number" class="t-edge" min="0" max="80" value="' + numOr(s.edgeDist, 5) + '"></div>' +
+                    '<div class="row-field"><label>' + esc(t('Bottom Dist (%):')) + '</label><input type="number" class="t-bottom" min="0" max="90" step="0.5" value="' + numOr(s.bottomDist, 5) + '"></div>' +
+                    '<div class="row-field"><label class="checkbox-label"><input type="checkbox" class="t-showhead"' + (s.showHeader !== false ? ' checked' : '') + '> ' + esc(t('Show Header')) + '</label></div>' +
+                    '<div class="row-field"><label>' + esc(t('Text Align:')) + '</label><select class="t-align">' + selOpts(posPairs, align) + '</select></div>' +
+                    '<div class="row-field"><label>' + esc(t('Width Type:')) + '</label><select class="t-wtype">' + selOpts([['auto', t('Auto')], ['percent', t('Custom %')]], wtype) + '</select></div>' +
+                    '<div class="row-field"><label>' + esc(t('Width (%):')) + '</label><input type="number" class="t-wval" min="20" max="100" value="' + numOr(s.customWidth, 80) + '"></div>' +
+                    '<div class="row-field"><label>' + esc(t('BG Image:')) + '</label><div class="file-input-group">' +
+                        '<input type="text" class="t-bgimg media-path" list="media-files" value="' + esc(s.bgImage || '') + '" placeholder="' + esc(t('e.g. bar.png')) + '">' +
+                        '<button type="button" class="btn-secondary b-bg" title="' + esc(t('Select background image')) + '">📁</button>' +
+                    '</div><div class="miss-note">' + esc(t('⚠ Not found in the media folder')) + '</div></div>' +
+                '</div>';
+
+            var container = $('tb-container');
+            container.appendChild(div);
+
+            var bgIn = div.querySelector('.t-bgimg');
+            div.querySelector('.b-bg').onclick = function () { pickInto(bgIn, 'image', ''); };
+            bgIn.addEventListener('input', function () { checkMissing(bgIn); });
+            div.querySelector('.b-up').onclick = function () { moveRow(this, -1, '.tb-row'); };
+            div.querySelector('.b-down').onclick = function () { moveRow(this, 1, '.tb-row'); };
+            div.querySelector('.b-del').onclick = function () { div.remove(); renumberTb(); updateCounts(); setDirty(true); };
+            makeSortable(div, container, '.tb-row', renumberTb);
+
+            var onChange = function () { refreshTbRow(div); updateCounts(); };
+            ['t-preset', 't-halign', 't-wtype'].forEach(function (c) { div.querySelector('.' + c).addEventListener('change', onChange); });
+            ['t-header', 't-body'].forEach(function (c) { div.querySelector('.' + c).addEventListener('input', onChange); });
+            refreshTbRow(div);
+            checkMissing(bgIn);
+            return div;
+        }
+
+        function refreshTbRow(div) {
+            var d = TB_DESIGNS[(parseInt(div.querySelector('.t-preset').value.replace('p', ''), 10) || 1) - 1];
+            var h = div.querySelector('.sw-h'), b = div.querySelector('.sw-b');
+            h.style.background = d[0]; h.style.color = d[1]; h.innerText = 'Aa';
+            b.style.background = d[2]; b.style.color = d[3]; b.innerText = 'Aa';
+            div.querySelector('.t-edge').disabled = div.querySelector('.t-halign').value === 'center';
+            div.querySelector('.t-wval').disabled = div.querySelector('.t-wtype').value !== 'percent';
+            div.classList.toggle('empty', !div.querySelector('.t-header').value.trim() && !div.querySelector('.t-body').value.trim());
+        }
+
+        function renumberTb() {
+            document.querySelectorAll('.tb-row').forEach(function (r, i) { r.querySelector('.tb-num').innerText = pad2(i + 1); });
+        }
+
+        function extractListItems(selector) {
+            var list = [];
+            document.querySelectorAll(selector + ' .media-item-row').forEach(function (row) {
+                var type = row.querySelector('.inp-type').value;
+                var desc = row.querySelector('.inp-desc').value.trim();
+                var th = row.querySelector('.inp-thumb').value.trim();
+                var o = null;
+                if (type === 'obs') {
+                    var src = row.querySelector('.inp-obs-source').value.trim();
+                    if (!src) return;
+                    o = { type: 'obs', obsSource: src };
+                    var sc = row.querySelector('.inp-obs-scene').value.trim();
+                    if (sc) o.obsScene = sc;
+                    if (row.querySelector('.inp-obs-mode').value === 'toggle') o.obsMode = 'toggle';
+                } else if (type === 'camera') {
+                    o = { type: 'camera', device: row.querySelector('.inp-cam').value.trim(), res: row.querySelector('.inp-res').value,
+                        fps: parseInt(row.querySelector('.inp-cfps').value, 10), mirror: row.querySelector('.inp-mirror').checked,
+                        fit: row.querySelector('.inp-fit').value };
+                } else if (type === 'capture') {
+                    o = { type: 'capture', source: row.querySelector('.inp-csrc').value, match: row.querySelector('.inp-match').value.trim(),
+                        fps: parseInt(row.querySelector('.inp-xfps').value, 10), fit: row.querySelector('.inp-fit').value,
+                        crop: Array.prototype.map.call(row.querySelectorAll('.inp-crop'), function (x) { return numOr(x.value, 0); }) };
+                }
+                if (o && (type === 'camera' || type === 'capture')) {
+                    var key = row.querySelector('.inp-key').value;
+                    if (key) {
+                        o.key = key;
+                        if (key === 'color') o.keyColor = row.querySelector('.inp-keycol').value;
+                        o.keyLevel = numOr(row.querySelector('.inp-keylvl').value, key === 'color' ? 25 : 4);
+                        o.keySoft = numOr(row.querySelector('.inp-keysoft').value, 10);
+                    }
+                }
+                if (o) {
+                    if (desc) o.desc = desc;
+                    if (th) o.thumb = th;
+                    list.push(o);
+                    return;
+                }
+                var file = row.querySelector('.inp-file').value.trim();
+                if (!file) return;
+                var fit = row.querySelector('.inp-fit').value;
+                var thumb = row.querySelector('.inp-thumb').value.trim();
+                var loop = row.querySelector('.inp-loop').checked;
+
+                var item = { file: file };
+                if (desc) item.desc = desc;
+                if (type) item.type = type;
+                if (fit) item.fit = fit;
+                if (thumb) item.thumb = thumb;
+                if (!loop) item.loop = false;
+                list.push(item);
+            });
+            return list;
+        }
+
+        function gatherData() {
+            var titlebars = [];
+            document.querySelectorAll('.tb-row').forEach(function (row) {
+                var header = row.querySelector('.t-header').value.trim();
+                var body = row.querySelector('.t-body').value.trim();
+                if (!header && !body) return;
+                var tb = {
+                    name: row.querySelector('.t-name').value.trim(),
+                    header: header,
+                    body: body,
+                    preset: row.querySelector('.t-preset').value,
+                    hAlign: row.querySelector('.t-halign').value,
+                    edgeDist: numOr(row.querySelector('.t-edge').value, 5),
+                    bottomDist: numOr(row.querySelector('.t-bottom').value, 5),
+                    showHeader: row.querySelector('.t-showhead').checked,
+                    align: row.querySelector('.t-align').value,
+                    widthType: row.querySelector('.t-wtype').value,
+                    customWidth: numOr(row.querySelector('.t-wval').value, 80)
+                };
+                var bg = row.querySelector('.t-bgimg').value.trim();
+                if (bg) tb.bgImage = bg;
+                titlebars.push(tb);
+            });
+            return {
+                channel: $('cfg-channel').value.trim() || 'obs_control',
+                startVisible: $('cfg-visible').checked,
+                bgStartVisible: $('cfg-bgvisible').checked,
+                liveRelay: $('cfg-relay').checked,
+                bgs: [1, 2, 3].map(function (n) { return $('cfg-bg' + n).value.trim(); }),
+                bbgs: [1, 2, 3].map(function (n) { return $('cfg-bbg' + n).value.trim(); }),
+                list: extractListItems('#items-container'),
+                bgList: extractListItems('#bgitems-container'),
+                titlebars: titlebars,
+                obsScenes: gatherScenes()
+            };
+        }
+
+        /* ---------- OBS connection + "OBS Source" items ---------- */
+        var obsSources = null, obsLoading = null, obsInfo = {};
+        function obsRenderState(st) {
+            var el = $('obs-state');
+            st = st || {};
+            if (!st.enabled) { el.className = 'obs-state'; el.innerText = t('Not connected (turned off)'); return; }
+            if (st.connected) { el.className = 'obs-state ' + (st.error ? 'bad' : 'ok'); el.innerText = st.error ? '⚠ ' + st.error : t('✓ Connected to OBS{v}', { v: st.obsVersion ? ' (WebSocket ' + st.obsVersion + ')' : '' }); }
+            else { el.className = 'obs-state bad'; el.innerText = '✕ ' + (st.error || t('Connecting…')); }
+        }
+        function obsLoadInfo() {
+            return api('GET', '/api/obs').then(function (j) {
+                obsInfo = j;
+                $('obs-enabled').checked = !!j.enabled;
+                $('obs-host').value = j.host || '127.0.0.1';
+                $('obs-port').value = j.port || 4455;
+                $('obs-pass').value = '';
+                $('obs-pass').placeholder = j.hasPassword ? t('(saved — type to change)') : t('(none)');
+                obsRenderState(Object.assign({ enabled: j.enabled }, j.status));
+            }).catch(function () {});
+        }
+        function obsApply() {
+            var body = { enabled: $('obs-enabled').checked, host: $('obs-host').value.trim(), port: $('obs-port').value };
+            if ($('obs-pass').value !== '') body.password = $('obs-pass').value;
+            $('obs-state').className = 'obs-state'; $('obs-state').innerText = t('Connecting…');
+            api('PUT', '/api/obs', body).then(function () {
+                obsSources = null;
+                setTimeout(function () { obsLoadInfo().then(function () { if (obsInfo.status && obsInfo.status.connected) obsEnsureSources(true); }); }, 1200);
+            }).catch(function (e) { obsRenderState({ enabled: true, error: errText(e) }); });
+        }
+        /** scenes + sources from OBS (cached); resolves even when OBS is not connected */
+        function obsEnsureSources(force) {
+            if (obsSources && !force) return Promise.resolve(obsSources);
+            if (obsLoading && !force) return obsLoading;
+            obsLoading = api('GET', '/api/obs/sources').then(function (r) {
+                obsSources = r;
+                var dl = $('obs-scenes'); dl.innerHTML = '';
+                (r.scenes || []).forEach(function (sc) { var o = document.createElement('option'); o.value = sc.name; dl.appendChild(o); });
+                document.querySelectorAll('.media-item-row[data-kind="obs"]').forEach(function (row) { if (row._obsFill) row._obsFill(); });
+                refreshTransitionSelects();
+                return r;
+            }).catch(function () { obsSources = null; return { scenes: [] }; }).then(function (r) { obsLoading = null; return r; });
+            return obsLoading;
+        }
+        function obsFillSourceList(dl, scene) {
+            var seen = {}, html = '';
+            ((obsSources && obsSources.scenes) || []).forEach(function (sc) {
+                if (scene && sc.name !== scene) return;
+                sc.sources.forEach(function (n) { if (!seen[n]) { seen[n] = 1; html += '<option value="' + esc(n) + '">' + esc(scene ? '' : sc.name) + '</option>'; } });
+            });
+            dl.innerHTML = html;
+        }
+        /* ---------- Camera / Window / Screen capture items ---------- */
+        function listBox(list) { return list === 'background' ? $('bgitems-container') : $('items-container'); }
+        function addLiveItem(kind, list) {
+            var row = addItemDOM(listBox(list), '', '', kind, '', '', true, {});
+            updateCounts(); setDirty(true);
+            row.scrollIntoView({ block: 'nearest' });
+            if (kind === 'capture') { if (APP) row.querySelector('.b-pick').click(); else flash(t('Window/screen capture works only in the SlideMang app'), true); }
+            else camDetect(false);
+        }
+        var camAsked = false;
+        /** fill the camera list; labels need permission, so "force" opens a camera for a moment */
+        function camDetect(force) {
+            if (!navigator.mediaDevices) return;
+            var fill = function () {
+                return navigator.mediaDevices.enumerateDevices().then(function (ds) {
+                    var cams = ds.filter(function (d) { return d.kind === 'videoinput'; });
+                    var dl = $('cam-list'); dl.innerHTML = '';
+                    cams.forEach(function (d) { if (d.label) { var o = document.createElement('option'); o.value = d.label; dl.appendChild(o); } });
+                    return cams;
+                });
+            };
+            fill().then(function (cams) {
+                if (!force && (camAsked || !cams.length || cams[0].label)) return;
+                camAsked = true;
+                return navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (st) {
+                    st.getTracks().forEach(function (tk) { tk.stop(); });
+                    return fill();
+                }).then(function (c) { flash(t('✓ {n} camera(s) found', { n: c.length })); });
+            }).catch(function (e) { flash(t('Camera: {msg}', { msg: (e && e.name === 'NotReadableError') ? t('busy (used by another program, e.g. OBS?)') : ((e && (e.name || e.message)) || '') }), true); });
+        }
+        /** window picker with live thumbnails (app only) */
+        function pickWindow(kind, cb) {
+            if (!APP) { flash(t('Window/screen capture works only in the SlideMang app'), true); return; }
+            var m = $('pick-modal'), grid = $('pick-grid');
+            $('pick-title').innerText = t('Pick a window or screen');
+            grid.innerHTML = '<div style="color:#888">' + esc(t('Loading…')) + '</div>';
+            m.classList.add('on');
+            APP.captureSources({ thumbs: true }).then(function (list) {
+                grid.innerHTML = '';
+                list.sort(function (a, b) { return (a.kind === kind ? 0 : 1) - (b.kind === kind ? 0 : 1); });
+                list.forEach(function (w) {
+                    var b = document.createElement('button'); b.type = 'button'; b.className = 'pick-card';
+                    b.innerHTML = (w.thumb ? '<img src="' + w.thumb + '">' : '') + '<span>' + (w.kind === 'screen' ? '🖥 ' : '🪟 ') + esc(w.name) + '</span>';
+                    b.onclick = function () { m.classList.remove('on'); cb(w); };
+                    grid.appendChild(b);
+                });
+                if (!list.length) grid.innerHTML = '<div style="color:#888">' + esc(t('No windows found')) + '</div>';
+            }).catch(function (e) { grid.innerHTML = '<div style="color:#ff8a80">' + esc(String(e && e.message || e)) + '</div>'; });
+        }
+
+        function addObsItem(list) {
+            var row = addItemDOM(listBox(list), '', '', 'obs', '', '', true, {});
+            updateCounts(); setDirty(true);
+            row.scrollIntoView({ block: 'nearest' });
+            row.querySelector('.inp-obs-source').focus();
+            if (!(obsInfo.status && obsInfo.status.connected)) flash(t('Connect to OBS in General & Quick BG to pick sources from a list'), true);
+        }
+
+        /* ---------- OBSSCENE_LIST rows ---------- */
+        function transitionOptions(cur) {
+            var names = ((obsSources && obsSources.transitions) || []).map(function (x) { return x.name; });
+            if (cur && names.indexOf(cur) < 0) names.unshift(cur);
+            return opt('', t('(OBS current transition)'), cur || '') + names.map(function (n) { return opt(n, n, cur || ''); }).join('');
+        }
+        function addSceneRow(sc, user) {
+            sc = sc || {};
+            var c = $('sc-container');
+            var div = document.createElement('div');
+            div.className = 'media-item-row sc-row';
+            div.innerHTML = '<div class="drag-handle" title="' + esc(t('Drag to reorder')) + '">⠿</div><div class="row-fields">' +
+                '<div class="row-field f-wide"><label>' + esc(t('Button name:')) + '</label><input type="text" class="s-name" value="' + esc(sc.name || '') + '" placeholder="' + esc(t('(scene name)')) + '"></div>' +
+                '<div class="row-field f-wide"><label>' + esc(t('OBS Scene:')) + '</label><div class="file-input-group">' +
+                    '<input type="text" class="s-scene" list="obs-scenes" value="' + esc(sc.scene || '') + '" placeholder="' + esc(t('e.g. Gameplay')) + '">' +
+                    '<button type="button" class="btn-secondary b-r" title="' + esc(t('Reload the list from OBS')) + '">↻</button></div></div>' +
+                '<div class="row-field"><label>' + esc(t('Transition:')) + '</label><select class="s-tr">' + transitionOptions(sc.transition) + '</select></div>' +
+                '<div class="row-field f-small"><label>' + esc(t('Duration (ms):')) + '</label><input type="number" class="s-dur" min="0" max="20000" step="50" value="' + (sc.duration || '') + '" placeholder="' + esc(t('OBS')) + '"></div>' +
+                '<div class="row-field"><label>' + esc(t('Thumbnail:')) + '</label><div class="file-input-group">' +
+                    '<input type="text" class="s-thumb media-path" list="media-files" value="' + esc(sc.thumb || '') + '" placeholder="' + esc(t('(live preview from OBS)')) + '">' +
+                    '<button type="button" class="btn-secondary b-th" title="' + esc(t('Select Thumbnail')) + '">📁</button></div>' +
+                    '<div class="miss-note">' + esc(t('⚠ Not found in the media folder')) + '</div></div>' +
+                '<div class="mini-btns">' +
+                    '<button type="button" class="btn-secondary b-up" title="' + esc(t('Move Up')) + '">▲</button>' +
+                    '<button type="button" class="btn-secondary b-down" title="' + esc(t('Move Down')) + '">▼</button>' +
+                    '<button type="button" class="btn-danger b-del">' + esc(t('Delete')) + '</button></div></div>';
+            c.appendChild(div);
+            div.querySelector('.b-up').onclick = function () { moveRow(this, -1, '.sc-row'); };
+            div.querySelector('.b-down').onclick = function () { moveRow(this, 1, '.sc-row'); };
+            div.querySelector('.b-del').onclick = function () { div.remove(); updateCounts(); setDirty(true); };
+            div.querySelector('.b-r').onclick = function () { obsSources = null; obsEnsureSources(true).then(refreshTransitionSelects); };
+            div.querySelector('.s-scene').addEventListener('focus', function () { obsEnsureSources(); });
+            var thIn = div.querySelector('.s-thumb');
+            div.querySelector('.b-th').onclick = function () { pickInto(thIn, 'image', ''); };
+            thIn.addEventListener('input', function () { checkMissing(thIn); });
+            checkMissing(thIn);
+            makeSortable(div, c, '.sc-row', updateCounts);
+            if (user) {
+                updateCounts(); setDirty(true); div.scrollIntoView({ block: 'nearest' }); div.querySelector('.s-scene').focus();
+                obsEnsureSources().then(refreshTransitionSelects);
+                if (!(obsInfo.status && obsInfo.status.connected)) flash(t('Connect to OBS in General & Quick BG to pick sources from a list'), true);
+            }
+            return div;
+        }
+        function refreshTransitionSelects() {
+            document.querySelectorAll('.sc-row .s-tr').forEach(function (sel) { var v = sel.value; sel.innerHTML = transitionOptions(v); sel.value = v; });
+        }
+        function gatherScenes() {
+            var out = [];
+            document.querySelectorAll('.sc-row').forEach(function (r) {
+                var scene = r.querySelector('.s-scene').value.trim();
+                if (!scene) return;
+                var o = { name: r.querySelector('.s-name').value.trim(), scene: scene, transition: r.querySelector('.s-tr').value,
+                    duration: Math.max(0, parseInt(r.querySelector('.s-dur').value, 10) || 0) };
+                var th = r.querySelector('.s-thumb').value.trim();
+                if (th) o.thumb = th;
+                out.push(o);
+            });
+            return out;
+        }
+
+        /* ---------- save / load / reset ---------- */
+        function saveConfig() {
+            var data = gatherData();
+            var missing = document.querySelectorAll('input.media-path.missing').length;
+            $('btn-save').disabled = true;
+            api('PUT', '/api/config', data).then(function (r) {
+                loadedChannel = r.config.channel;
+                setDirty(false);
+                flash(missing ? t('✓ Saved · Controller and OBS displays updated · ⚠ {n} file(s) not found', { n: missing }) : t('✓ Saved · Controller and OBS displays updated'), missing > 0);
+            }).catch(function (e) { flash(t('Save failed: {msg}', { msg: errText(e) }), true); })
+              .then(function () { $('btn-save').disabled = false; });
+        }
+
+        function loadFromServer() {
+            return api('GET', '/api/config').then(function (cfg) {
+                loadDataToUI(cfg); setDirty(false);
+                // listen on the app bus so the app can ask this page to reload (language change)
+                if (!window.__smBus) {
+                    window.__smBus = new BroadcastChannel(cfg.channel || 'obs_control');
+                    window.__smBus.onmessage = function (ev) {
+                        var d = ev.data;
+                        if (d && d.type === 'OBS_STATUS') { obsInfo.status = d; obsRenderState(d); if (d.connected && !obsSources) obsEnsureSources(); }
+                    };
+                }
+            })
+                .catch(function (e) { flash(t('Could not load the configuration: {msg}', { msg: errText(e) }), true); });
+        }
+
+        function resetSetupConfig() {
+            if (!confirm(t('Load the default example (1 item in each list)? Your current lists are replaced when you press Save.'))) return;
+            api('GET', '/api/config/defaults').then(function (cfg) {
+                loadDataToUI(cfg);
+                setDirty(true);
+                return refreshMediaIndex();
+            }).then(function () { flash(t('✓ Default example loaded — press 💾 Save to keep it')); })
+              .catch(function (e) { flash(errText(e), true); });
+        }
+
+        function openMediaFolder() { if (APP) APP.openMediaFolder(); }
+
+        function setLanguage(code) {
+            if (dirty && !confirm(t('You have unsaved changes. Changing the language reloads this page. Continue?'))) { $('lang-select').value = I18N.lang; return; }
+            setDirty(false);
+            api('POST', '/api/lang', { lang: code }).catch(function (e) { flash(errText(e), true); });
+        }
+
+        // the app asks this page to reload (language change): keep unsaved work unless the user agrees
+        window.SM_beforeReload = function () { return !dirty || confirm(t('You have unsaved changes. Reload anyway?')); };
+
+        function init() {
+            buildBgFields();
+            var sel = $('lang-select');
+            (I18N.locales || []).forEach(function (l) {
+                var o = document.createElement('option'); o.value = l.code; o.textContent = l.name; if (l.code === I18N.lang) o.selected = true; sel.appendChild(o);
+            });
+            if (sel.options.length < 2) sel.style.display = 'none';
+            if (!APP) $('btn-open-media').style.display = 'none';
+            try { var tab = localStorage.getItem('setup_media_tab'); if (tab) showTab(tab); } catch (e) {}
+
+            // anything typed or changed in the main area marks the page as unsaved
+            document.querySelector('.main').addEventListener('input', function () { setDirty(true); });
+            document.querySelector('.main').addEventListener('change', function () { setDirty(true); });
+            document.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); saveConfig(); }
+            });
+            // browser tab (not the app): warn before closing with unsaved changes
+            if (!APP) window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+            ['obs-enabled', 'obs-host', 'obs-port', 'obs-pass'].forEach(function (id) {
+                // these are app settings saved by "Connect & test", not part of the lists
+                $(id).addEventListener('input', function (e) { e.stopPropagation(); });
+                $(id).addEventListener('change', function (e) { e.stopPropagation(); });
+            });
+            $('obs-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') obsApply(); });
+            loadFromServer().then(refreshMediaIndex);
+            obsLoadInfo().then(function () { if (obsInfo.status && obsInfo.status.connected) obsEnsureSources(); });
+        }
+
+        init();
+    </script>
+</body>
+</html>
