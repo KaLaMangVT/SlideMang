@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b97ff"/><stop offset="1" stop-color="#3568e0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+  <!-- เลเยอร์ด้านหลัง (พื้นหลัง/สไลด์) -->
+  <rect x="236" y="196" width="600" height="420" rx="72" fill="none" stroke="#ffffff" stroke-opacity="0.40" stroke-width="52"/>
+  <!-- จอหลัก -->
+  <rect x="188" y="300" width="600" height="420" rx="72" fill="#3568e0" stroke="#ffffff" stroke-width="52"/>
+  <!-- แถบ Titlebar (lower third) -->
+  <rect x="268" y="560" width="440" height="72" rx="36" fill="#ffffff"/>
+  <!-- จุด LIVE -->
+  <circle cx="300" cy="420" r="44" fill="#ff3b6b"/>
+  <!-- ขาตั้ง/แถบควบคุม -->
+  <rect x="338" y="800" width="300" height="52" rx="26" fill="#ffffff" fill-opacity=".9"/>
+</svg>

@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "channel": "obs_control",
+  "startVisible": true,
+  "bgStartVisible": true,
+  "bgs": ["sample-panel-bg.jpg", "", ""],
+  "bbgs": ["sample-panel-bg.jpg", "", ""],
+  "list": [
+    { "file": "sample-slide.jpg", "desc": "Sample slide" }
+  ],
+  "bgList": [
+    { "file": "sample-background.jpg", "desc": "Sample background" }
+  ],
+  "titlebars": [
+    {
+      "name": "Welcome",
+      "header": "LIVE",
+      "body": "Welcome to the stream!",
+      "preset": "p1",
+      "hAlign": "center",
+      "edgeDist": 5,
+      "bottomDist": 5,
+      "showHeader": true,
+      "align": "left",
+      "widthType": "auto",
+      "customWidth": 80
+    }
+  ]
+}
